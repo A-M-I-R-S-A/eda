@@ -1,0 +1,454 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   DESIGN TOKENS
+   A restrained, editorial palette: midnight navy + champagne gold on warm
+   neutrals. Gold is an accent only - never a dominant surface.
+   ========================================================================== */
+@theme {
+  /* -- Brand: navy ------------------------------------------------------ */
+  --color-navy-50: #f2f4f8;
+  --color-navy-100: #dfe4ee;
+  --color-navy-200: #c2cbdd;
+  --color-navy-300: #94a2be;
+  --color-navy-400: #5d6f92;
+  --color-navy-500: #35486d;
+  --color-navy-600: #22355a;
+  --color-navy-700: #152743;
+  --color-navy-800: #0e1b33;
+  --color-navy-900: #0a1428;
+  --color-navy-950: #060d1c;
+
+  /* -- Brand: champagne gold (accent only) ------------------------------ */
+  --color-gold-50: #faf6ee;
+  --color-gold-100: #f2e9d5;
+  --color-gold-200: #e6d5b1;
+  --color-gold-300: #d6bd8b;
+  --color-gold-400: #c8a96a;
+  --color-gold-500: #b99458;
+  --color-gold-600: #9d7a46;
+  --color-gold-700: #7c5f37;
+
+  /* -- Neutrals: warm ---------------------------------------------------- */
+  --color-paper: #faf9f6;
+  --color-paper-2: #f4f2ec;
+  --color-paper-3: #ece9e1;
+  --color-line: #e4e0d6;
+  --color-line-2: #d6d1c4;
+  --color-ink: #16191f;
+  --color-ink-2: #3a3f49;
+  --color-muted: #6f6b63;
+  --color-muted-2: #8d887f;
+
+  /* -- Status ------------------------------------------------------------ */
+  --color-success: #2f6f52;
+  --color-success-soft: #e8f2ec;
+  --color-warning: #92671b;
+  --color-warning-soft: #fbf1de;
+  --color-danger: #9b2f2f;
+  --color-danger-soft: #f8ebeb;
+  --color-info: #2b5279;
+  --color-info-soft: #e9f0f7;
+
+  /* -- Typography -------------------------------------------------------- */
+  --font-sans: var(--font-vazirmatn), "Vazirmatn", "Segoe UI", Tahoma, sans-serif;
+
+  /* -- Radii: restrained (premium is not pill-shaped) -------------------- */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 10px;
+
+  /* -- Elevation: whisper-soft ------------------------------------------ */
+  --shadow-xs: 0 1px 2px rgba(10, 20, 40, 0.04);
+  --shadow-sm: 0 1px 3px rgba(10, 20, 40, 0.05), 0 1px 2px rgba(10, 20, 40, 0.03);
+  --shadow-md: 0 4px 16px -4px rgba(10, 20, 40, 0.08), 0 2px 6px -2px rgba(10, 20, 40, 0.04);
+  --shadow-lg: 0 18px 44px -18px rgba(10, 20, 40, 0.18), 0 6px 16px -8px rgba(10, 20, 40, 0.08);
+
+  /* -- Motion ------------------------------------------------------------ */
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    /* Persian script must never receive negative tracking. */
+    letter-spacing: 0;
+  }
+
+  :root {
+    color-scheme: light;
+    --header-h: 4.5rem;
+    scroll-padding-top: calc(var(--header-h) + 1.5rem);
+  }
+
+  @media (min-width: 1024px) {
+    :root {
+      --header-h: 5.25rem;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    /* `clip` (not `hidden`) so no scroll container is created and
+       `position: sticky` keeps working on the header. */
+    overflow-x: clip;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+
+  body {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    /* Persian needs a taller default leading than Latin. */
+    line-height: 1.9;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "kern";
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.5;
+    color: var(--color-navy-900);
+    text-wrap: balance;
+  }
+
+  h1 { line-height: 1.42; }
+  h2 { line-height: 1.45; }
+
+  p { text-wrap: pretty; }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Latin words/digits inside Persian text keep their own direction */
+  bdi, .ltr {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::selection {
+    background: var(--color-navy-900);
+    color: var(--color-gold-200);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-gold-500);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::-webkit-scrollbar { width: 11px; height: 11px; }
+  ::-webkit-scrollbar-track { background: var(--color-paper-2); }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-line-2);
+    border: 3px solid var(--color-paper-2);
+    border-radius: 99px;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-muted-2); }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+}
+
+/* ==========================================================================
+   COMPONENT-LEVEL PRIMITIVES
+   ========================================================================== */
+@layer components {
+  /* -- Layout containers -------------------------------------------------- */
+  .container-x {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 82.5rem;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 640px) { .container-x { padding-inline: 2rem; } }
+  @media (min-width: 1024px) { .container-x { padding-inline: 3rem; } }
+  @media (min-width: 1440px) { .container-x { padding-inline: 4rem; } }
+
+  .container-narrow {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 48rem;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 640px) { .container-narrow { padding-inline: 2rem; } }
+
+  /* -- Section rhythm ---------------------------------------------------- */
+  .section { padding-block: 4.5rem; }
+  @media (min-width: 768px) { .section { padding-block: 6.5rem; } }
+  @media (min-width: 1280px) { .section { padding-block: 8rem; } }
+
+  .section-sm { padding-block: 3.5rem; }
+  @media (min-width: 768px) { .section-sm { padding-block: 5rem; } }
+
+  /* -- Eyebrow label ----------------------------------------------------- */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--color-gold-600);
+  }
+  .eyebrow::before {
+    content: "";
+    width: 1.75rem;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.7;
+    flex: none;
+  }
+  .eyebrow-on-dark { color: var(--color-gold-300); }
+
+  /* -- Display headings -------------------------------------------------- */
+  .display-1 {
+    font-size: clamp(2.125rem, 1.35rem + 3.5vw, 4.25rem);
+    font-weight: 800;
+    line-height: 1.36;
+  }
+  .display-2 {
+    font-size: clamp(1.75rem, 1.25rem + 2.1vw, 3rem);
+    font-weight: 700;
+    line-height: 1.42;
+  }
+  .display-3 {
+    font-size: clamp(1.375rem, 1.1rem + 1.1vw, 2rem);
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  .lead {
+    font-size: clamp(1.0625rem, 1rem + 0.35vw, 1.25rem);
+    line-height: 2;
+    color: var(--color-ink-2);
+  }
+  .lead-on-dark { color: rgba(255, 255, 255, 0.72); }
+
+  /* -- Hairlines --------------------------------------------------------- */
+  .hairline { height: 1px; background: var(--color-line); border: 0; }
+  .hairline-dark { height: 1px; background: rgba(255, 255, 255, 0.12); border: 0; }
+  .gold-rule { width: 3rem; height: 2px; background: var(--color-gold-400); border: 0; }
+
+  /* -- Surfaces ---------------------------------------------------------- */
+  .surface { background: #fff; border: 1px solid var(--color-line); }
+  .surface-muted { background: var(--color-paper-2); border: 1px solid var(--color-line); }
+  .on-navy { background: var(--color-navy-900); color: #fff; }
+  .on-navy h1, .on-navy h2, .on-navy h3, .on-navy h4, .on-navy h5, .on-navy h6 { color: #fff; }
+
+  /* -- Fine architectural grid overlays ---------------------------------- */
+  .grid-lines {
+    background-image: linear-gradient(to left, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-size: 5.5rem 100%;
+  }
+  .grid-lines-light {
+    background-image: linear-gradient(to left, rgba(10, 20, 40, 0.05) 1px, transparent 1px);
+    background-size: 5.5rem 100%;
+  }
+
+  /* -- Editorial article typography -------------------------------------- */
+  .prose-fa {
+    font-size: 1.0625rem;
+    line-height: 2.1;
+    color: var(--color-ink-2);
+  }
+  @media (min-width: 768px) {
+    .prose-fa { font-size: 1.125rem; line-height: 2.15; }
+  }
+  .prose-fa > * + * { margin-block-start: 1.5em; }
+  .prose-fa h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-navy-900);
+    margin-block-start: 2.4em;
+    margin-block-end: -0.4em;
+    scroll-margin-top: calc(var(--header-h) + 2rem);
+  }
+  .prose-fa h3 {
+    font-size: 1.1875rem;
+    font-weight: 700;
+    color: var(--color-navy-800);
+    margin-block-start: 2em;
+    margin-block-end: -0.5em;
+    scroll-margin-top: calc(var(--header-h) + 2rem);
+  }
+  .prose-fa ul, .prose-fa ol {
+    padding-inline-start: 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .prose-fa ul > li { list-style: none; position: relative; }
+  .prose-fa ul > li::before {
+    content: "";
+    position: absolute;
+    inset-inline-start: -1.1rem;
+    top: 0.95em;
+    width: 5px;
+    height: 5px;
+    background: var(--color-gold-400);
+    border-radius: 50%;
+  }
+  .prose-fa ol { list-style: decimal; }
+  .prose-fa ol > li::marker { color: var(--color-gold-600); font-weight: 600; }
+  .prose-fa blockquote {
+    border-inline-start: 2px solid var(--color-gold-400);
+    padding-inline-start: 1.5rem;
+    margin-inline-start: 0;
+    font-size: 1.125em;
+    color: var(--color-navy-800);
+    font-weight: 500;
+  }
+  .prose-fa a {
+    color: var(--color-navy-700);
+    text-decoration: underline;
+    text-underline-offset: 5px;
+    text-decoration-color: var(--color-gold-300);
+    text-decoration-thickness: 1px;
+    transition: text-decoration-color 0.2s;
+  }
+  .prose-fa a:hover { text-decoration-color: var(--color-gold-500); }
+  .prose-fa strong { color: var(--color-navy-900); font-weight: 700; }
+  .prose-fa table { width: 100%; border-collapse: collapse; font-size: 0.9375rem; }
+  .prose-fa th, .prose-fa td {
+    border: 1px solid var(--color-line);
+    padding: 0.75rem 1rem;
+    text-align: start;
+  }
+  .prose-fa th { background: var(--color-paper-2); font-weight: 600; color: var(--color-navy-900); }
+
+  /* -- Link with animated underline (RTL origin) ------------------------- */
+  .link-underline {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .link-underline::after {
+    content: "";
+    position: absolute;
+    inset-inline-start: 0;
+    bottom: -3px;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.45s var(--ease-out-quint);
+  }
+  .link-underline:hover::after { transform: scaleX(1); }
+
+  /* -- Card lift --------------------------------------------------------- */
+  .card-lift {
+    transition:
+      transform 0.5s var(--ease-out-quint),
+      box-shadow 0.5s var(--ease-out-quint),
+      border-color 0.4s var(--ease-in-out-soft);
+  }
+  .card-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-line-2);
+  }
+}
+
+/* ==========================================================================
+   UTILITIES
+   ========================================================================== */
+@layer utilities {
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Reveal-on-scroll; degrades to fully visible when JS is unavailable. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition:
+      opacity 0.75s var(--ease-out-quint),
+      transform 0.75s var(--ease-out-quint);
+  }
+  .reveal.is-visible { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; }
+  }
+
+  .mask-fade-b {
+    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  }
+}
+
+/* ==========================================================================
+   KEYFRAMES (used sparingly)
+   ========================================================================== */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.985) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes shimmer {
+  100% { transform: translateX(-100%); }
+}
+
+.animate-fade-in { animation: fade-in 0.5s var(--ease-out-quint) both; }
+.animate-fade-up { animation: fade-up 0.6s var(--ease-out-quint) both; }
+.animate-scale-in { animation: scale-in 0.35s var(--ease-out-quint) both; }
+
+/* Skeleton shimmer (sweeps right-to-left for RTL) */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-paper-3);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(100%);
+  background: linear-gradient(270deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: shimmer 1.6s infinite;
+}

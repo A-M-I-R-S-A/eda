@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="b" x1="1" y1="0" x2="0.1" y2="1">
+      <stop offset="0" stop-color="#13223d"/><stop offset="0.6" stop-color="#0b1526"/><stop offset="1" stop-color="#070f1f"/>
+    </linearGradient>
+    <radialGradient id="g" cx="50%" cy="20%" r="55%">
+      <stop offset="0" stop-color="#c8a96a" stop-opacity="0.18"/><stop offset="1" stop-color="#c8a96a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#b)"/>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <g stroke="#ffffff" stroke-opacity="0.05">
+    <line x1="150" y1="0" x2="150" y2="630"/><line x1="300" y1="0" x2="300" y2="630"/>
+    <line x1="450" y1="0" x2="450" y2="630"/><line x1="600" y1="0" x2="600" y2="630"/>
+    <line x1="750" y1="0" x2="750" y2="630"/><line x1="900" y1="0" x2="900" y2="630"/>
+    <line x1="1050" y1="0" x2="1050" y2="630"/>
+  </g>
+  <g stroke="#c8a96a" stroke-opacity="0.35">
+    <line x1="180" y1="540" x2="600" y2="180"/><line x1="1020" y1="540" x2="600" y2="180"/>
+  </g>
+  <g transform="translate(600 330)">
+    <path d="M-190 190V30a190 190 0 0 1 380 0v160" fill="none" stroke="#ffffff" stroke-opacity="0.26" stroke-width="1.6"/>
+    <path d="M-130 190V30a130 130 0 0 1 260 0v160" fill="none" stroke="#ffffff" stroke-opacity="0.14" stroke-width="1.2"/>
+    <path d="M-70 190V30a70 70 0 0 1 140 0v160" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="1"/>
+    <path d="M-26 -178h52l12 46h-76z" fill="#c8a96a"/>
+    <circle cx="0" cy="-150" r="4" fill="#c8a96a"/>
+    <line x1="-300" y1="190" x2="300" y2="190" stroke="#ffffff" stroke-opacity="0.28" stroke-width="1.6"/>
+    <line x1="-300" y1="190" x2="-90" y2="190" stroke="#c8a96a" stroke-opacity="0.85" stroke-width="1.6"/>
+    <line x1="-300" y1="206" x2="300" y2="206" stroke="#ffffff" stroke-opacity="0.09"/>
+  </g>
+</svg>

@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+build
+# Every Next.js env variant, not just the two that happened to be listed.
+# `.env.production` holds the live database password and AUTH_SECRET.
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+.data/
+.uploads/
+.DS_Store
+tsconfig.tsbuildinfo
+.claude/

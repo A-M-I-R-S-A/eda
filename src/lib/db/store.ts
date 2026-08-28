@@ -96,6 +96,7 @@ interface StoredRow extends RowDataPacket {
 
 interface MetaRow extends RowDataPacket {
   revision: number | string;
+  schema_version: number;
   seeded: number;
 }
 
@@ -123,13 +124,18 @@ function idOf(entity: unknown): string | null {
 /*  Load                                                                      */
 /* -------------------------------------------------------------------------- */
 
-async function readRevision(): Promise<{ revision: number; seeded: boolean }> {
+async function readRevision(): Promise<{
+  revision: number;
+  schemaVersion: number;
+  seeded: boolean;
+}> {
   const [rows] = await getPool().query<MetaRow[]>(
-    "SELECT revision, seeded FROM db_meta WHERE id = 1",
+    "SELECT revision, schema_version, seeded FROM db_meta WHERE id = 1",
   );
   const row = rows[0];
   return {
     revision: row ? Number(row.revision) : 0,
+    schemaVersion: row ? Number(row.schema_version) : 0,
     seeded: Boolean(row?.seeded),
   };
 }
@@ -137,7 +143,7 @@ async function readRevision(): Promise<{ revision: number; seeded: boolean }> {
 /** Materialises the whole `Database` object out of SQL. */
 async function loadSnapshot(): Promise<{ db: Database; revision: number }> {
   const pool = getPool();
-  const { revision, seeded } = await readRevision();
+  const { revision, schemaVersion, seeded } = await readRevision();
 
   if (!seeded) {
     // First boot against an empty database.
@@ -159,7 +165,15 @@ async function loadSnapshot(): Promise<{ db: Database; revision: number }> {
     }),
   );
 
-  const raw: Record<string, unknown> = { version: DB_VERSION };
+  /**
+   * The stored schema version, not the current one.
+   *
+   * `migrate()` decides which steps to run by comparing this against
+   * `DB_VERSION`. Hardcoding the current version here — as an earlier revision
+   * did — made every snapshot look already-migrated, so no migration ever ran
+   * and a schema change would land against data still in the old shape.
+   */
+  const raw: Record<string, unknown> = { version: schemaVersion };
   const rowMaps = new Map<string, Map<string, string>>();
 
   for (const [key, rows] of collections) {
@@ -196,7 +210,75 @@ async function loadSnapshot(): Promise<{ db: Database; revision: number }> {
   cache.rows = rowMaps;
   cache.settingsJson = settingsJson;
 
+  if (schemaVersion !== DB_VERSION) {
+    console.info(`[db] migrating snapshot ${schemaVersion} → ${DB_VERSION}.`);
+    const bumped = await persistMigration(db);
+    return { db, revision: bumped };
+  }
+
   return { db, revision };
+}
+
+/**
+ * Writes a migrated snapshot back and records the new schema version.
+ *
+ * Runs inside the same write lock as any other mutation, so two processes
+ * starting against an out-of-date database cannot both migrate it. Returns the
+ * revision the caller should cache.
+ */
+async function persistMigration(db: Database): Promise<number> {
+  const connection = await getPool().getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    const [rows] = await connection.query<MetaRow[]>(
+      "SELECT revision, schema_version FROM db_meta WHERE id = 1 FOR UPDATE",
+    );
+
+    // Another process migrated while we waited for the lock.
+    if (Number(rows[0]?.schema_version) === DB_VERSION) {
+      await connection.rollback();
+      return Number(rows[0]?.revision ?? 0);
+    }
+
+    await connection.query(
+      "REPLACE INTO settings (id, data, updated_at) VALUES (?, ?, ?)",
+      ["site", JSON.stringify(db.settings), updatedAtOf(db.settings)],
+    );
+    cache.settingsJson = JSON.stringify(db.settings);
+
+    // A migration may backfill a collection that did not exist before.
+    for (const key of COLLECTION_KEYS) {
+      const items = (db[key] ?? []) as unknown[];
+      const known = cache.rows.get(key) ?? new Map<string, string>();
+      const missing = items.filter((item) => {
+        const id = idOf(item);
+        return id !== null && !known.has(id);
+      });
+      if (!missing.length) continue;
+
+      await insertRows(connection, TABLE_FOR_COLLECTION[key], missing);
+      for (const item of missing) {
+        const id = idOf(item);
+        if (id) known.set(id, JSON.stringify(item));
+      }
+      cache.rows.set(key, known);
+    }
+
+    await connection.query(
+      "UPDATE db_meta SET revision = revision + 1, schema_version = ? WHERE id = 1",
+      [DB_VERSION],
+    );
+
+    await connection.commit();
+    return Number(rows[0]?.revision ?? 0) + 1;
+  } catch (error) {
+    await connection.rollback().catch(() => undefined);
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 /* -------------------------------------------------------------------------- */

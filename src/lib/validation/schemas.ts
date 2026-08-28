@@ -33,8 +33,27 @@ const faText = (min: number, max: number, label: string) =>
         .max(max, `${label} نباید بیشتر از ${max} نویسه باشد.`),
     );
 
+/**
+ * An absent form field means "empty", not "invalid".
+ *
+ * `formData.get()` returns `null` for an input that is not in the DOM, and a
+ * bare `z.string()` rejects that — `.optional()` admits `undefined` only. Any
+ * field behind a collapsed section or a conditional toggle therefore failed
+ * validation on a control the user could not see, and the form refused to save
+ * with nothing visibly wrong.
+ *
+ * `blankIfMissing` normalises both `null` and `undefined` to `""` before the
+ * string rules run, so these schemas describe what the field may *contain*
+ * rather than whether it happened to be rendered.
+ */
+const blankIfMissing = (value: unknown) => (value == null ? "" : value);
+
+/** Optional free text: absent, empty and whitespace all mean "not supplied". */
+const optionalString = (max: number, message?: string) =>
+  z.preprocess(blankIfMissing, z.string().max(max, message));
+
 export const mobileSchema = z.preprocess(
-  (v) => (typeof v === "string" ? digitsOnly(v) : v),
+  (v) => (v == null ? "" : typeof v === "string" ? digitsOnly(v) : v),
   z
     .string()
     .min(1, "وارد کردن شماره موبایل الزامی است.")
@@ -42,7 +61,7 @@ export const mobileSchema = z.preprocess(
 );
 
 export const anyPhoneSchema = z.preprocess(
-  (v) => (typeof v === "string" ? digitsOnly(v) : v),
+  (v) => (v == null ? "" : typeof v === "string" ? digitsOnly(v) : v),
   z
     .string()
     .min(1, "وارد کردن شماره تماس الزامی است.")
@@ -50,7 +69,7 @@ export const anyPhoneSchema = z.preprocess(
 );
 
 export const optionalEmailSchema = z.preprocess(
-  (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+  (v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
   z.string().email("نشانی ایمیل معتبر نیست.").max(160).optional(),
 );
 
@@ -218,7 +237,7 @@ export const articleFormSchema = z
     ),
     featured: z.coerce.boolean().default(false),
     status: contentStatusEnum.default("draft"),
-    scheduledFor: z.string().max(40).optional().default(""),
+    scheduledFor: optionalString(40),
     seo: cmsSeoSchema,
   })
   .refine(
@@ -242,12 +261,12 @@ export const serviceFormSchema = z.object({
     linesToArray,
     z.array(z.string().max(200)).max(8, "حداکثر ۸ مورد مجاز است."),
   ),
-  image: z.string().max(400).optional().default(""),
-  ctaLabel: z.string().max(60).optional().default(""),
-  ctaHref: z.string().max(400).optional().default(""),
+  image: optionalString(400),
+  ctaLabel: optionalString(60),
+  ctaHref: optionalString(400),
   order: z.coerce.number().int().min(0).max(999),
   status: contentStatusEnum.default("published"),
-  scheduledFor: z.string().max(40).optional().default(""),
+  scheduledFor: optionalString(40),
   seo: cmsSeoSchema,
 });
 
@@ -257,10 +276,10 @@ export const arbitratorFormSchema = z.object({
   fullName: faText(3, 100, "نام و نام خانوادگی"),
   slug: slugSchema,
   title: faText(3, 120, "سمت"),
-  shortBio: z.string().max(300, "معرفی کوتاه نباید بیشتر از ۳۰۰ نویسه باشد.").default(""),
-  biography: z.string().max(20000, "متن معرفی بیش از حد مجاز است.").default(""),
+  shortBio: optionalString(300, "معرفی کوتاه نباید بیشتر از ۳۰۰ نویسه باشد."),
+  biography: optionalString(20000, "متن معرفی بیش از حد مجاز است."),
   photoUrl: z.preprocess(
-    (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+    (v) => (v == null || (typeof v === "string" && v.trim() === "") ? undefined : v),
     z.string().max(400).optional(),
   ),
   // Every credential list may legitimately be empty: the profile renders a
@@ -273,7 +292,7 @@ export const arbitratorFormSchema = z.object({
     linesToArray,
     z.array(z.string().max(80)).max(10),
   ),
-  approach: z.string().max(4000).optional().default(""),
+  approach: optionalString(4000),
   languages: z.preprocess(
     linesToArray,
     z.array(z.string().max(40)).max(8),
@@ -327,7 +346,7 @@ export const settingsFormSchema = z.object({
   ),
   email: emailSchema,
   mobile: z.preprocess(
-    (v) => (typeof v === "string" ? digitsOnly(v) : v),
+    (v) => (v == null ? "" : typeof v === "string" ? digitsOnly(v) : v),
     z
       .string()
       .max(15)
@@ -337,16 +356,19 @@ export const settingsFormSchema = z.object({
       )
       .default(""),
   ),
-  language: z.string().trim().max(12).default("fa-IR"),
+  language: z.preprocess(
+    (value) => (value == null || value === "" ? "fa-IR" : value),
+    z.string().trim().max(12),
+  ),
   direction: z.enum(["rtl", "ltr"]).default("rtl"),
-  logoUrl: z.string().max(400).optional().default(""),
-  faviconUrl: z.string().max(400).optional().default(""),
+  logoUrl: optionalString(400),
+  faviconUrl: optionalString(400),
   address: faText(10, 400, "آدرس"),
   postalCode: z.preprocess(
-    (v) => (typeof v === "string" ? digitsOnly(v) : v),
+    (v) => (v == null ? "" : typeof v === "string" ? digitsOnly(v) : v),
     z.string().regex(/^\d{10}$/, "کد پستی باید ۱۰ رقم باشد."),
   ),
-  registrationNumber: z.string().max(40).optional().default(""),
+  registrationNumber: optionalString(40),
   mapEmbedUrl: z
     .string()
     .url("نشانی نقشه معتبر نیست.")
@@ -366,14 +388,14 @@ export const settingsFormSchema = z.object({
    * `notaryEnabled`.
    */
   notaryEnabled: z.coerce.boolean().default(false),
-  notaryOfficeName: z.string().max(160).optional().default(""),
-  notaryName: z.string().max(120).optional().default(""),
+  notaryOfficeName: optionalString(160),
+  notaryName: optionalString(120),
   notaryPhone: z.preprocess(
-    (v) => (typeof v === "string" ? digitsOnly(v) : v),
+    (v) => (v == null ? "" : typeof v === "string" ? digitsOnly(v) : v),
     z.string().max(20).optional().default(""),
   ),
-  notaryAddress: z.string().max(400).optional().default(""),
-  notaryNote: z.string().max(400).optional().default(""),
+  notaryAddress: optionalString(400),
+  notaryNote: optionalString(400),
 });
 
 export type SettingsFormInput = z.infer<typeof settingsFormSchema>;
@@ -404,7 +426,7 @@ export const appointmentStatusEnum = z.enum([
 export const statusChangeSchema = z.object({
   id: z.string().min(1),
   status: z.string().min(1),
-  note: z.string().max(600).optional(),
+  note: optionalString(600).optional(),
 });
 
 export const noteSchema = z.object({

@@ -14,22 +14,50 @@ import { digitsOnly, normalizeFa, toEnDigits } from "@/lib/utils/persian";
  * short" — so these schemas guard *shape and safety*, not editorial taste.
  */
 
-const trimmed = (max: number) =>
-  z
-    .string()
-    .transform((value) => normalizeFa(value ?? "").trim())
-    .pipe(z.string().max(max, `این فیلد نباید بیشتر از ${max} نویسه باشد.`));
+/**
+ * An absent form field means "empty", not "invalid".
+ *
+ * `formData.get()` returns `null` for an input that is not in the DOM, and a
+ * bare `z.string()` rejects that — `.optional()` admits `undefined` only. Every
+ * collapsed or conditionally-rendered field therefore failed validation on a
+ * control the user could not see, and the form refused to save with nothing
+ * visibly wrong. The advanced SEO block, collapsed by default on every page,
+ * broke saving across pages, articles, services and arbitrators exactly this
+ * way.
+ *
+ * Normalising `null` and `undefined` to `""` at the edge fixes the whole class
+ * rather than each field that happens to be hidden today.
+ */
+const blankIfMissing = (value: unknown) => (value == null ? "" : value);
 
+const trimmed = (max: number) =>
+  z.preprocess(
+    blankIfMissing,
+    z
+      .string()
+      .transform((value) => normalizeFa(value).trim())
+      .pipe(z.string().max(max, `این فیلد نباید بیشتر از ${max} نویسه باشد.`)),
+  );
+
+/**
+ * A missing required field should say so in Persian, not report a type error.
+ *
+ * Same reasoning as `trimmed`: `null` from an absent input is "empty", and
+ * empty is what the `min(1)` message below is for.
+ */
 const required = (max: number, label: string) =>
-  z
-    .string()
-    .transform((value) => normalizeFa(value ?? "").trim())
-    .pipe(
-      z
-        .string()
-        .min(1, `وارد کردن ${label} الزامی است.`)
-        .max(max, `${label} نباید بیشتر از ${max} نویسه باشد.`),
-    );
+  z.preprocess(
+    blankIfMissing,
+    z
+      .string()
+      .transform((value) => normalizeFa(value).trim())
+      .pipe(
+        z
+          .string()
+          .min(1, `وارد کردن ${label} الزامی است.`)
+          .max(max, `${label} نباید بیشتر از ${max} نویسه باشد.`),
+      ),
+  );
 
 export const optionalText = (max = 400) => trimmed(max).optional().default("");
 
@@ -37,9 +65,11 @@ export const optionalText = (max = 400) => trimmed(max).optional().default("");
 /*  Slugs                                                                     */
 /* -------------------------------------------------------------------------- */
 
-export const cmsSlugSchema = z
+export const cmsSlugSchema = z.preprocess(
+  blankIfMissing,
+  z
   .string()
-  .transform((value) => toEnDigits(value ?? "").trim().toLowerCase())
+  .transform((value) => toEnDigits(value).trim().toLowerCase())
   .pipe(
     z
       .string()
@@ -49,7 +79,8 @@ export const cmsSlugSchema = z
         /^[a-z0-9؀-ۿ]+(?:-[a-z0-9؀-ۿ]+)*$/,
         "نامک فقط می‌تواند شامل حروف، اعداد و خط تیره باشد.",
       ),
-  );
+  ),
+);
 
 /**
  * A page slug additionally may not collide with a hand-built route.
@@ -100,9 +131,11 @@ export const cmsSeoSchema = z.object({
  * `javascript:` above all — is rejected, because navigation is administrator
  * input that renders into an `href` on every page of the site.
  */
-export const hrefSchema = z
+export const hrefSchema = z.preprocess(
+  blankIfMissing,
+  z
   .string()
-  .transform((value) => (value ?? "").trim())
+  .transform((value) => value.trim())
   .pipe(
     z
       .string()
@@ -118,12 +151,15 @@ export const hrefSchema = z
           value.startsWith("mailto:"),
         "نشانی باید با /، #، https://، tel: یا mailto: شروع شود.",
       ),
-  );
+  ),
+);
 
 /** A media reference: either a library URL or an empty string. */
-export const mediaRefSchema = z
+export const mediaRefSchema = z.preprocess(
+  blankIfMissing,
+  z
   .string()
-  .transform((value) => (value ?? "").trim())
+  .transform((value) => value.trim())
   .pipe(
     z
       .string()
@@ -132,21 +168,28 @@ export const mediaRefSchema = z
         (value) => value === "" || value.startsWith("/") || value.startsWith("https://"),
         "نشانی فایل معتبر نیست.",
       ),
-  );
+  ),
+);
 
-const hexColorSchema = z
+const hexColorSchema = z.preprocess(
+  blankIfMissing,
+  z
   .string()
-  .transform((value) => (value ?? "").trim())
+  .transform((value) => value.trim())
   .pipe(
     z
       .string()
       .regex(/^#[0-9a-fA-F]{6}$/, "کد رنگ باید به قالب #RRGGBB باشد."),
-  );
+  ),
+);
 
-const isoDateTimeSchema = z
-  .string()
-  .transform((value) => (value ?? "").trim())
-  .pipe(z.string().max(40));
+const isoDateTimeSchema = z.preprocess(
+  blankIfMissing,
+  z
+    .string()
+    .transform((value) => value.trim())
+    .pipe(z.string().max(40)),
+);
 
 /* -------------------------------------------------------------------------- */
 /*  Pages                                                                     */
@@ -396,7 +439,7 @@ const staffRecipientsSchema = z.preprocess(
 
 /** A registered sms.ir template id, or empty to leave that flow disabled. */
 const templateIdSchema = z.preprocess(
-  (value) => (typeof value === "string" ? digitsOnly(value) : value),
+  (value) => (value == null ? "" : typeof value === "string" ? digitsOnly(value) : value),
   z
     .string()
     .max(20)
@@ -506,7 +549,7 @@ export const adminUserFormSchema = z.object({
     .email("نشانی ایمیل معتبر نیست.")
     .max(160),
   phone: z.preprocess(
-    (value) => (typeof value === "string" ? digitsOnly(value) : value),
+    (value) => (value == null ? "" : typeof value === "string" ? digitsOnly(value) : value),
     z
       .string()
       .max(15)

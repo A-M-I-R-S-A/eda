@@ -38,8 +38,8 @@ import { isSlotSelectable } from "@/lib/services/scheduling";
 import { phoneVerificationRequired } from "@/lib/sms/constants";
 import { verifyProof } from "@/lib/sms/otp";
 import {
-  notifyAdminOfAppointment,
-  notifyAdminOfRequest,
+  notifyStaffOfAppointment,
+  notifyStaffOfRequest,
 } from "@/lib/sms/service";
 import {
   errorState,
@@ -181,7 +181,7 @@ export async function submitConsultationRequest(
      * provider outage must never turn a successfully stored request into an
      * error on the public form.
      */
-    after(() => notifyAdminOfRequest(record));
+    after(() => notifyStaffOfRequest(record));
 
     revalidatePath(ROUTES.admin.requests);
     revalidatePath(ROUTES.admin.root);
@@ -327,7 +327,7 @@ export async function submitAppointment(
       notes: [],
     });
 
-    after(() => notifyAdminOfAppointment(record));
+    after(() => notifyStaffOfAppointment(record));
 
     revalidatePath(ROUTES.admin.appointments);
     revalidatePath(ROUTES.admin.root);

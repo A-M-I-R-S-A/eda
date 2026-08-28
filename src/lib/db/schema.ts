@@ -25,7 +25,7 @@ import type {
  * the snapshot cannot be brought forward — an administrator's content is not
  * something to discard over a schema change.
  */
-export const DB_VERSION = 3;
+export const DB_VERSION = 4;
 
 /**
  * The complete persisted state.

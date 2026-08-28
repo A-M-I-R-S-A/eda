@@ -440,31 +440,56 @@ export interface SmsLogEntry {
   createdAt: ISODate;
 }
 
+/** A person who is alerted when new work arrives. */
+export interface SmsStaffRecipient {
+  /** Passed to the template as its name parameter. */
+  name: string;
+  /** `09xxxxxxxxx`. */
+  phone: string;
+}
+
 /**
  * SMS behaviour, configured from the admin panel.
  *
- * Provider credentials deliberately live in the environment, not here: an
- * editor with access to the settings screen should not be able to read the
- * account's API key.
+ * ── Templates, not free text ──────────────────────────────────────────────
+ * sms.ir sends transactional messages through templates registered and
+ * approved in its own panel; the API supplies only parameter *values*. The
+ * wording therefore lives at the provider, and what is configured here is
+ * which template to use and what its parameters are called.
+ *
+ * That is also why there is no message-body field anywhere in this app: a box
+ * for composing text would imply an ability the account does not have, and
+ * every send would be rejected.
+ *
+ * Provider credentials stay in the environment — an editor with access to the
+ * settings screen must not be able to read the account's API key. Template ids
+ * are not secret and live here, so they can be changed without a deploy.
  */
 export interface SmsSettings {
-  /** Master switch. When false nothing is sent, but sends are still logged. */
+  /** Master switch. Nothing is sent while this is false. */
   enabled: boolean;
   /** Require a verified phone number before a public form can be submitted. */
   requirePhoneVerification: boolean;
-  /** Numbers alerted when a new enquiry arrives. Empty falls back to `mobile`. */
-  adminRecipients: string[];
-  notifyAdminOnRequest: boolean;
-  notifyAdminOnAppointment: boolean;
-  /**
-   * Prefilled text for the "send SMS" composer, keyed by the status being
-   * moved to. `{name}`, `{code}`, `{status}` and `{institution}` are replaced
-   * before the text reaches the composer, where staff can still edit it.
-   */
-  requestStatusTemplates: Record<string, string>;
-  appointmentStatusTemplates: Record<string, string>;
-  /** Appended to every outgoing message. */
-  signature: string;
+
+  /* -- staff alert: new submission ---------------------------------------- */
+
+  /** People alerted when an enquiry or booking arrives. */
+  staffRecipients: SmsStaffRecipient[];
+  notifyStaffOnRequest: boolean;
+  notifyStaffOnAppointment: boolean;
+  /** Registered template id for the staff alert. Empty disables it. */
+  staffTemplateId: string;
+  /** Parameter in that template carrying the staff member's name. */
+  staffNameParam: string;
+  /** Parameter in that template carrying the tracking or booking code. */
+  staffCodeParam: string;
+
+  /* -- client notification: status update --------------------------------- */
+
+  /** Registered template id for the update sent to a client. Empty disables it. */
+  updateTemplateId: string;
+  /** Parameter in that template carrying the tracking or booking code. */
+  updateCodeParam: string;
 }
 
 /* -------------------------------------------------------------------------- */

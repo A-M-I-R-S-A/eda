@@ -339,11 +339,18 @@ function isBuildPhase(): boolean {
  * layout reads a cookie), so nothing rendered from this ends up baked into the
  * output. It exists so `next build` does not require database connectivity.
  */
+let warnedBuildFallback = false;
+
 async function buildPhaseFallback(): Promise<Database> {
-  console.warn(
-    "[build] database unreachable; rendering build-time metadata from seed defaults. " +
-      "Runtime still requires a working database.",
-  );
+  // Once per process, not once per page — `next build` renders dozens of
+  // routes across several workers, and repeating this drowns the build output.
+  if (!warnedBuildFallback) {
+    warnedBuildFallback = true;
+    console.warn(
+      "[build] database unreachable; rendering build-time metadata from seed defaults. " +
+        "Runtime still requires a working database.",
+    );
+  }
   return buildSeedDatabase({ ephemeral: true });
 }
 

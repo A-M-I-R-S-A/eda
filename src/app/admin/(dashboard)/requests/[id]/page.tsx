@@ -23,7 +23,7 @@ import {
   updateRequestStatusAction,
 } from "@/lib/actions/admin";
 import { sendRequestSmsAction } from "@/lib/actions/sms";
-import { requestStatusMessage, smsReady } from "@/lib/sms/service";
+import { statusUpdateBlockedReason } from "@/lib/sms/service";
 import { Badge } from "@/components/ui/badge";
 import { Icon } from "@/components/ui/icon";
 import { NoteComposer, StatusChanger } from "@/components/admin/actions";
@@ -55,22 +55,17 @@ export default async function AdminRequestDetailPage({ params }: PageProps) {
 
   if (!request) notFound();
 
-  const [csrfToken, assigned, settings, smsHistory, canSend] = await Promise.all([
+  const [csrfToken, assigned, settings, smsHistory, smsBlocked] = await Promise.all([
     getCsrfToken(),
     request.assignedArbitratorId
       ? getArbitratorById(request.assignedArbitratorId)
       : Promise.resolve(null),
     getSettings(),
     listSmsForEntity(request.id),
-    smsReady(),
+    statusUpdateBlockedReason(),
   ]);
 
-  /**
-   * Prefill from the template for the status the request is *currently* in —
-   * the message staff most often want is the one announcing where it has just
-   * moved to. Blank when no template is configured for that status.
-   */
-  const smsDraft = requestStatusMessage(request, request.status, settings);
+
 
   const status = REQUEST_STATUS[request.status];
 
@@ -226,16 +221,17 @@ export default async function AdminRequestDetailPage({ params }: PageProps) {
 
           <Panel
             title="ارسال پیامک به متقاضی"
-            description="متن پیش‌فرض بر اساس وضعیت فعلی آماده شده است؛ پیش از ارسال آن را بازبینی کنید."
+            description="پیامک از قالب تعریف‌شده در sms.ir ارسال می‌شود و تنها کد پیگیری به آن داده می‌شود."
           >
             <SmsComposer
               action={sendRequestSmsAction}
               id={request.id}
               csrfToken={csrfToken}
               recipient={request.phone}
-              defaultBody={smsDraft}
+              code={request.trackingCode}
+              templateId={settings.sms.updateTemplateId}
               history={smsHistory}
-              ready={canSend}
+              blockedReason={smsBlocked}
             />
           </Panel>
 

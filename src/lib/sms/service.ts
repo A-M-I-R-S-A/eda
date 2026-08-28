@@ -7,11 +7,9 @@ import type {
   SiteSettings,
 } from "@/types";
 import { getSettings, recordSms } from "@/lib/db";
-import { REQUEST_STATUS, APPOINTMENT_STATUS } from "@/lib/config/labels";
-import { formatJalali } from "@/lib/utils/jalali";
 import {
   readCredentials,
-  sendTextMessage,
+  sendTemplateMessage,
   sendVerificationCode,
 } from "./client";
 import { createChallenge, generateCode, type OtpPurpose } from "./otp";
@@ -19,19 +17,19 @@ import { createChallenge, generateCode, type OtpPurpose } from "./otp";
 /**
  * Everything the application sends by SMS.
  *
- * Three flows, deliberately shaped differently:
+ * Three flows, all through registered sms.ir templates — the provider holds
+ * the wording and the API supplies only parameter values:
  *
  *   1. `sendOtp` — automatic, on the visitor's request, to prove a number.
- *   2. `sendCaseNotification` — never automatic. Staff read the text, edit it
- *      and press send. A message about somebody's legal matter is not
- *      something to fire on a status transition.
- *   3. `notifyAdminOf*` — automatic, to the office's own numbers only.
+ *      One parameter: the code.
+ *   2. `sendStatusUpdate` — never automatic. Staff press send on the record.
+ *      One parameter: the tracking or booking code.
+ *   3. `notifyStaffOf*` — automatic, to the office's own numbers only.
+ *      Two parameters: the staff member's name and the code.
  *
  * Every attempt is logged, successful or not, so the office can reconcile what
- * was actually delivered against what the provider charged for.
+ * was delivered against what the provider charged for.
  */
-
-export { MAX_SMS_LENGTH } from "./constants";
 
 export type SmsOutcome = { ok: true } | { ok: false; error: string };
 
@@ -41,79 +39,18 @@ const DISABLED_MESSAGE =
 const NO_CREDENTIALS_MESSAGE =
   "کلید سامانه پیامک تنظیم نشده است (SMSIR_API_KEY).";
 
-/* -------------------------------------------------------------------------- */
-/*  Templates                                                                 */
-/* -------------------------------------------------------------------------- */
-
-export interface TemplateVars {
-  name?: string;
-  code?: string;
-  status?: string;
-  institution?: string;
-  date?: string;
-  time?: string;
-}
-
-/** Replaces `{placeholder}` tokens; an unknown token is left untouched. */
-export function renderTemplate(template: string, vars: TemplateVars): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) => {
-    const value = vars[key as keyof TemplateVars];
-    return value === undefined || value === "" ? match : value;
-  });
-}
-
-/** Appends the configured signature unless the body already ends with it. */
-export function withSignature(body: string, settings: SiteSettings): string {
-  const signature = settings.sms.signature?.trim();
-  if (!signature || body.includes(signature)) return body;
-  return `${body.trim()}\n${signature}`;
-}
+const NO_TEMPLATE_MESSAGE =
+  "شناسه قالب پیامک در «تنظیمات › پیامک» وارد نشده است.";
 
 /**
- * The prefilled text for the composer on a request screen.
+ * What the log records instead of a message body.
  *
- * Returns an empty string when no template is configured for that status —
- * the composer then simply opens blank rather than inventing wording about
- * somebody's case.
+ * There is no body to record: the text lives at the provider. Storing the
+ * template id and the values actually sent is both what we know and what is
+ * useful when reconciling an invoice.
  */
-export function requestStatusMessage(
-  request: ConsultationRequest,
-  status: string,
-  settings: SiteSettings,
-): string {
-  const template = settings.sms.requestStatusTemplates?.[status];
-  if (!template) return "";
-
-  return withSignature(
-    renderTemplate(template, {
-      name: request.fullName,
-      code: request.trackingCode,
-      status: REQUEST_STATUS[request.status]?.label ?? status,
-      institution: settings.institutionName,
-    }),
-    settings,
-  );
-}
-
-export function appointmentStatusMessage(
-  appointment: Appointment,
-  status: string,
-  settings: SiteSettings,
-): string {
-  const template = settings.sms.appointmentStatusTemplates?.[status];
-  if (!template) return "";
-
-  return withSignature(
-    renderTemplate(template, {
-      name: appointment.fullName,
-      code: appointment.bookingCode,
-      status: APPOINTMENT_STATUS[appointment.status]?.label ?? status,
-      institution: settings.institutionName,
-      date: formatJalali(appointment.date),
-      time: appointment.time,
-    }),
-    settings,
-  );
+function describe(templateId: string, values: string[]): string {
+  return `[قالب ${templateId}] ${values.join(" — ")}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -156,25 +93,31 @@ export async function sendOtp(
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Case notifications (staff-initiated)                                      */
+/*  Status update to the client (staff-initiated)                             */
 /* -------------------------------------------------------------------------- */
 
-export interface CaseNotificationInput {
+export interface StatusUpdateInput {
   to: string;
-  body: string;
+  /** Tracking code for a request, booking code for an appointment. */
+  code: string;
   entityType: "request" | "appointment";
   entityId: string;
   session: SessionPayload;
 }
 
 /**
- * Sends a message a staff member composed about a specific record.
+ * Sends the "your case has been updated" template to a client.
  *
- * The sender is recorded on the log entry: for a legal practice, "who told the
- * client what, and when" is part of the case file.
+ * Deliberately an explicit action rather than a side effect of changing a
+ * status: not every transition is worth a message, and some warrant a phone
+ * call instead. Coupling the two would send messages nobody chose to send.
+ *
+ * The recipient and the code both come from the stored record, never from the
+ * form, so nothing in the admin UI can redirect a case notification to an
+ * arbitrary number or misreport a code.
  */
-export async function sendCaseNotification(
-  input: CaseNotificationInput,
+export async function sendStatusUpdate(
+  input: StatusUpdateInput,
 ): Promise<SmsOutcome> {
   const settings = await getSettings();
 
@@ -183,15 +126,20 @@ export async function sendCaseNotification(
   const credentials = readCredentials();
   if (!credentials) return { ok: false, error: NO_CREDENTIALS_MESSAGE };
 
-  const body = input.body.trim();
-  if (!body) return { ok: false, error: "متن پیامک خالی است." };
+  const templateId = settings.sms.updateTemplateId?.trim();
+  if (!templateId) return { ok: false, error: NO_TEMPLATE_MESSAGE };
 
-  const result = await sendTextMessage([input.to], body, credentials);
+  const result = await sendTemplateMessage(
+    input.to,
+    Number(templateId),
+    [{ name: settings.sms.updateCodeParam || "CODE", value: input.code }],
+    credentials,
+  );
 
   await recordSms({
     to: input.to,
     purpose: "status-update",
-    body,
+    body: describe(templateId, [input.code]),
     status: result.ok ? "sent" : "failed",
     providerMessageId: result.ok ? result.messageId : undefined,
     error: result.ok ? undefined : result.error,
@@ -205,43 +153,55 @@ export async function sendCaseNotification(
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Office alerts (automatic)                                                 */
+/*  Staff alerts (automatic)                                                  */
 /* -------------------------------------------------------------------------- */
 
 /**
- * Where office alerts go.
+ * Alerts each configured staff member that new work arrived.
  *
- * Explicit recipients win; otherwise the institution's own mobile number is
- * used, so the feature works as soon as it is switched on.
+ * Sent one message per recipient rather than one to many, because the template
+ * greets the person by name — a shared send could not do that.
  */
-function alertRecipients(settings: SiteSettings): string[] {
-  const configured = settings.sms.adminRecipients?.filter(Boolean) ?? [];
-  if (configured.length) return configured;
-  return settings.mobile ? [settings.mobile] : [];
-}
-
-async function sendAlert(body: string, entityId: string): Promise<void> {
-  const settings = await getSettings();
-
-  if (!settings.sms.enabled) return;
-
+async function alertStaff(
+  code: string,
+  entityId: string,
+  settings: SiteSettings,
+): Promise<void> {
   const credentials = readCredentials();
   if (!credentials) return;
 
-  const recipients = alertRecipients(settings);
+  const templateId = settings.sms.staffTemplateId?.trim();
+  if (!templateId) return;
+
+  const recipients = (settings.sms.staffRecipients ?? []).filter(
+    (person) => person.phone,
+  );
   if (!recipients.length) return;
 
-  const result = await sendTextMessage(recipients, body, credentials);
+  const nameParam = settings.sms.staffNameParam || "NAME";
+  const codeParam = settings.sms.staffCodeParam || "CODE";
 
-  await recordSms({
-    to: recipients.join(","),
-    purpose: "admin-alert",
-    body,
-    status: result.ok ? "sent" : "failed",
-    providerMessageId: result.ok ? result.messageId : undefined,
-    error: result.ok ? undefined : result.error,
-    entityId,
-  });
+  for (const person of recipients) {
+    const result = await sendTemplateMessage(
+      person.phone,
+      Number(templateId),
+      [
+        { name: nameParam, value: person.name || "همکار" },
+        { name: codeParam, value: code },
+      ],
+      credentials,
+    );
+
+    await recordSms({
+      to: person.phone,
+      purpose: "admin-alert",
+      body: describe(templateId, [person.name || "همکار", code]),
+      status: result.ok ? "sent" : "failed",
+      providerMessageId: result.ok ? result.messageId : undefined,
+      error: result.ok ? undefined : result.error,
+      entityId,
+    });
+  }
 }
 
 /**
@@ -250,45 +210,49 @@ async function sendAlert(body: string, entityId: string): Promise<void> {
  * Never throws and never blocks the visitor: a provider outage must not turn a
  * successfully stored request into an error on the public form.
  */
-export async function notifyAdminOfRequest(
+export async function notifyStaffOfRequest(
   request: ConsultationRequest,
 ): Promise<void> {
   try {
     const settings = await getSettings();
-    if (!settings.sms.notifyAdminOnRequest) return;
-
-    // No case details — this goes to a phone that may not be the arbitrator's.
-    const body = withSignature(
-      `درخواست جدید ثبت شد.\nکد پیگیری: ${request.trackingCode}\nمتقاضی: ${request.fullName}\nتماس: ${request.phone}`,
-      settings,
-    );
-
-    await sendAlert(body, request.id);
+    if (!settings.sms.enabled || !settings.sms.notifyStaffOnRequest) return;
+    await alertStaff(request.trackingCode, request.id, settings);
   } catch (error) {
-    console.error("[sms] admin request alert failed", error);
+    console.error("[sms] staff request alert failed", error);
   }
 }
 
-export async function notifyAdminOfAppointment(
+export async function notifyStaffOfAppointment(
   appointment: Appointment,
 ): Promise<void> {
   try {
     const settings = await getSettings();
-    if (!settings.sms.notifyAdminOnAppointment) return;
-
-    const body = withSignature(
-      `رزرو وقت جدید.\nکد: ${appointment.bookingCode}\nمراجع: ${appointment.fullName}\nزمان: ${formatJalali(appointment.date)} ساعت ${appointment.time}`,
-      settings,
-    );
-
-    await sendAlert(body, appointment.id);
+    if (!settings.sms.enabled || !settings.sms.notifyStaffOnAppointment) return;
+    await alertStaff(appointment.bookingCode, appointment.id, settings);
   } catch (error) {
-    console.error("[sms] admin appointment alert failed", error);
+    console.error("[sms] staff appointment alert failed", error);
   }
 }
 
-/** True when the deployment could actually send right now. */
-export async function smsReady(): Promise<boolean> {
+/* -------------------------------------------------------------------------- */
+/*  Readiness                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/** True when a client status update could actually be sent right now. */
+export async function statusUpdateReady(): Promise<boolean> {
   const settings = await getSettings();
-  return settings.sms.enabled && readCredentials() !== null;
+  return (
+    settings.sms.enabled &&
+    Boolean(settings.sms.updateTemplateId?.trim()) &&
+    readCredentials() !== null
+  );
+}
+
+/** Explains, in Persian, why sending is unavailable — or `null` when it is. */
+export async function statusUpdateBlockedReason(): Promise<string | null> {
+  const settings = await getSettings();
+  if (!settings.sms.enabled) return DISABLED_MESSAGE;
+  if (!readCredentials()) return NO_CREDENTIALS_MESSAGE;
+  if (!settings.sms.updateTemplateId?.trim()) return NO_TEMPLATE_MESSAGE;
+  return null;
 }

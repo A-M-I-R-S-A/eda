@@ -3,18 +3,13 @@ import "server-only";
 /**
  * sms.ir transport.
  *
- * Two endpoints are used, because the provider treats them differently under
- * Iranian regulation:
- *
- *   • `/send/verify` — template-based one-time codes. Delivered on the
- *     dedicated verification route, which is the only route allowed to reach a
- *     number that has not opted in, and the only one that arrives reliably at
- *     3am. The template is registered in the sms.ir panel; we send parameter
- *     values, never free text.
- *
- *   • `/send/bulk` — ordinary messages from the account's own line number.
- *     Used for the notifications staff send about a case, and for the alert to
- *     the office when a new enquiry lands.
+ * Everything goes through `/send/verify`, the template route. Under Iranian
+ * regulation a transactional message is sent by naming a template that has
+ * been registered and approved in the sms.ir panel; the API supplies only
+ * parameter *values*. Free-text sending is a separate product that most
+ * accounts do not have, so the application never attempts it — a composer for
+ * writing message bodies would imply an ability the account lacks, and every
+ * send would be refused.
  *
  * Credentials come from the environment only. They are deliberately not part
  * of `SiteSettings`, so an editor with access to the admin panel cannot read
@@ -44,6 +39,7 @@ export function readCredentials(): SmsCredentials | null {
 
   return {
     apiKey,
+    /** Only reported on the settings screen; nothing sends from a line. */
     lineNumber: process.env.SMSIR_LINE_NUMBER?.trim() || "",
     otpTemplateId: Number(process.env.SMSIR_OTP_TEMPLATE_ID || 0),
     otpParameter: process.env.SMSIR_OTP_PARAM_NAME?.trim() || "CODE",
@@ -136,10 +132,44 @@ function toProviderMobile(phone: string): string {
   return phone.replace(/^0/, "");
 }
 
+export interface TemplateParameter {
+  name: string;
+  value: string;
+}
+
+/**
+ * Sends one registered template to one number.
+ *
+ * The only send primitive in the application. Callers name a template id and
+ * supply its parameter values; the wording is the provider's.
+ */
+export async function sendTemplateMessage(
+  phone: string,
+  templateId: number,
+  parameters: TemplateParameter[],
+  credentials: SmsCredentials,
+): Promise<SmsSendResult> {
+  if (!templateId) {
+    return { ok: false, error: "شناسه قالب پیامک تنظیم نشده است." };
+  }
+
+  return post(
+    "/send/verify",
+    {
+      mobile: toProviderMobile(phone),
+      templateId,
+      // Values are sent verbatim; sms.ir rejects a parameter the template
+      // does not declare, which is why the names are configurable.
+      parameters: parameters.map(({ name, value }) => ({ name, value })),
+    },
+    credentials.apiKey,
+  );
+}
+
 /**
  * Sends a one-time code through the registered verification template.
  *
- * The code itself is the only parameter, and it never appears in any log this
+ * The code is the only parameter, and it never appears in any log this
  * application writes.
  */
 export async function sendVerificationCode(
@@ -147,50 +177,11 @@ export async function sendVerificationCode(
   code: string,
   credentials: SmsCredentials,
 ): Promise<SmsSendResult> {
-  if (!credentials.otpTemplateId) {
-    return {
-      ok: false,
-      error:
-        "شناسه قالب پیامک تأیید تنظیم نشده است (SMSIR_OTP_TEMPLATE_ID).",
-    };
-  }
-
-  return post(
-    "/send/verify",
-    {
-      mobile: toProviderMobile(phone),
-      templateId: credentials.otpTemplateId,
-      parameters: [{ name: credentials.otpParameter, value: code }],
-    },
-    credentials.apiKey,
-  );
-}
-
-/** Sends a free-text message from the account's line number. */
-export async function sendTextMessage(
-  recipients: string[],
-  messageText: string,
-  credentials: SmsCredentials,
-): Promise<SmsSendResult> {
-  if (!credentials.lineNumber) {
-    return {
-      ok: false,
-      error: "شماره خط ارسال تنظیم نشده است (SMSIR_LINE_NUMBER).",
-    };
-  }
-
-  const mobiles = [...new Set(recipients.filter(Boolean))];
-  if (!mobiles.length) return { ok: false, error: "گیرنده‌ای مشخص نشده است." };
-
-  return post(
-    "/send/bulk",
-    {
-      lineNumber: credentials.lineNumber,
-      messageText,
-      mobiles,
-      sendDateTime: null,
-    },
-    credentials.apiKey,
+  return sendTemplateMessage(
+    phone,
+    credentials.otpTemplateId,
+    [{ name: credentials.otpParameter, value: code }],
+    credentials,
   );
 }
 

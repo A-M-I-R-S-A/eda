@@ -616,39 +616,6 @@ export async function saveAppointmentSettingsAction(
 /*  SMS                                                                       */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Reads the per-status template inputs.
- *
- * Each textarea is named `template.<group>.<status>`, so an administrator can
- * add a template for a status this build does not know about and it still
- * round-trips. Blank templates are stored as blanks rather than dropped: an
- * empty template is the explicit instruction "open the composer blank for this
- * status", which is different from "use the shipped default".
- */
-function readTemplates(
-  formData: FormData,
-  group: "request" | "appointment",
-): Record<string, string> {
-  const prefix = `template.${group}.`;
-  const result: Record<string, string> = {};
-
-  for (const [key, value] of formData.entries()) {
-    if (!key.startsWith(prefix) || typeof value !== "string") continue;
-    const status = key.slice(prefix.length);
-    if (status) result[status] = value.trim().slice(0, 420);
-  }
-
-  return result;
-}
-
-/**
- * Saves SMS behaviour.
- *
- * Gated on `advanced` rather than `settings`: turning this on spends the
- * institution's SMS credit and sends messages over its name to clients, which
- * is the super administrator's call. Provider credentials are not editable
- * here at all — they live in the environment.
- */
 export async function saveSmsSettingsAction(
   _prev: FormState,
   formData: FormData,
@@ -659,12 +626,14 @@ export async function saveSmsSettingsAction(
   const parsed = smsSettingsFormSchema.safeParse({
     enabled: bool(formData, "enabled"),
     requirePhoneVerification: bool(formData, "requirePhoneVerification"),
-    adminRecipients: text(formData, "adminRecipients"),
-    notifyAdminOnRequest: bool(formData, "notifyAdminOnRequest"),
-    notifyAdminOnAppointment: bool(formData, "notifyAdminOnAppointment"),
-    requestStatusTemplates: readTemplates(formData, "request"),
-    appointmentStatusTemplates: readTemplates(formData, "appointment"),
-    signature: text(formData, "signature"),
+    staffRecipients: text(formData, "staffRecipients"),
+    notifyStaffOnRequest: bool(formData, "notifyStaffOnRequest"),
+    notifyStaffOnAppointment: bool(formData, "notifyStaffOnAppointment"),
+    staffTemplateId: text(formData, "staffTemplateId"),
+    staffNameParam: text(formData, "staffNameParam"),
+    staffCodeParam: text(formData, "staffCodeParam"),
+    updateTemplateId: text(formData, "updateTemplateId"),
+    updateCodeParam: text(formData, "updateCodeParam"),
   });
 
   if (!parsed.success) {

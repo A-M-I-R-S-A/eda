@@ -296,46 +296,25 @@ export const DEFAULT_APPOINTMENTS: AppointmentSettings = {
  * credentials are present in the environment, so a fresh installation cannot
  * start spending SMS credit by accident.
  *
- * The templates below are only *prefill* for the composer on the request and
- * appointment screens. Staff always see the exact text and press send
- * themselves, which is the point: a message about someone's case is not
- * something to fire automatically on a status change.
- *
- * Placeholders: `{name}` `{code}` `{status}` `{institution}` `{date}` `{time}`.
+ * There is no message wording here. sms.ir sends transactional messages
+ * through templates registered in its own panel, and the API supplies only
+ * parameter values — so what is configured is which template to use and what
+ * its parameters are called. The default parameter names match sms.ir's own
+ * convention; change them to whatever your registered template declares.
  */
 export const DEFAULT_SMS: SmsSettings = {
   enabled: false,
   requirePhoneVerification: true,
-  adminRecipients: [],
-  notifyAdminOnRequest: true,
-  notifyAdminOnAppointment: true,
-  requestStatusTemplates: {
-    "in-review":
-      "{name} عزیز، درخواست شما با کد {code} در حال بررسی است. نتیجه از همین طریق اطلاع‌رسانی می‌شود.",
-    approved:
-      "{name} عزیز، درخواست شما با کد {code} تأیید شد. برای هماهنگی مراحل بعدی با شما تماس می‌گیریم.",
-    "needs-info":
-      "{name} عزیز، برای ادامه بررسی درخواست {code} ارائه مدارک تکمیلی لازم است. لطفاً با ما تماس بگیرید.",
-    scheduled:
-      "{name} عزیز، برای درخواست {code} جلسه‌ای تعیین شد. جزئیات از طریق دبیرخانه به اطلاع شما می‌رسد.",
-    completed:
-      "{name} عزیز، بررسی درخواست {code} تکمیل شد. از اعتماد شما سپاسگزاریم.",
-    cancelled:
-      "{name} عزیز، درخواست شما با کد {code} لغو شد. در صورت نیاز به پیگیری با ما تماس بگیرید.",
-  },
-  appointmentStatusTemplates: {
-    confirmed:
-      "{name} عزیز، وقت شما با کد {code} در تاریخ {date} ساعت {time} تأیید شد.",
-    rescheduled:
-      "{name} عزیز، زمان جلسه شما (کد {code}) به تاریخ {date} ساعت {time} تغییر یافت.",
-    completed:
-      "{name} عزیز، جلسه شما با کد {code} برگزار شد. از حضور شما سپاسگزاریم.",
-    cancelled:
-      "{name} عزیز، وقت شما با کد {code} لغو شد. برای رزرو مجدد با ما تماس بگیرید.",
-    rejected:
-      "{name} عزیز، متأسفانه امکان تأیید وقت درخواستی شما (کد {code}) وجود نداشت. لطفاً تماس بگیرید.",
-  },
-  signature: "مؤسسه داوری دادآور",
+
+  staffRecipients: [],
+  notifyStaffOnRequest: true,
+  notifyStaffOnAppointment: true,
+  staffTemplateId: "",
+  staffNameParam: "NAME",
+  staffCodeParam: "CODE",
+
+  updateTemplateId: "",
+  updateCodeParam: "CODE",
 };
 
 /* -------------------------------------------------------------------------- */

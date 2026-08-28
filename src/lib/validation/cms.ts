@@ -360,43 +360,82 @@ export const advancedFormSchema = z.object({
 
 const IRAN_MOBILE_RE = /^09\d{9}$/;
 
-/** One `09…` number per line; anything unparseable is rejected, not dropped. */
-const recipientListSchema = z.preprocess(
-  (value) =>
-    typeof value === "string"
-      ? value
-          .split(/[\n,،]/)
-          .map((line) => digitsOnly(line))
-          .filter(Boolean)
-      : Array.isArray(value)
-        ? value
-        : [],
+/**
+ * Staff recipients as `name | phone`, one per line.
+ *
+ * A repeating two-field row would be more "correct" and slower to fill in for
+ * a list of three colleagues. A malformed line is rejected rather than
+ * silently dropped: a phone number that quietly vanished is how someone stops
+ * receiving alerts without noticing.
+ */
+const staffRecipientsSchema = z.preprocess(
+  (value) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== "string") return [];
+
+    return value
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const [name = "", phone = ""] = line.split("|").map((part) => part.trim());
+        return { name: name.slice(0, 60), phone: digitsOnly(phone) };
+      });
+  },
   z
     .array(
-      z
-        .string()
-        .regex(IRAN_MOBILE_RE, "شماره گیرنده باید یک موبایل معتبر ۰۹… باشد."),
+      z.object({
+        name: z.string().max(60).default(""),
+        phone: z
+          .string()
+          .regex(IRAN_MOBILE_RE, "شماره همکار باید یک موبایل معتبر ۰۹… باشد."),
+      }),
     )
-    .max(5, "حداکثر ۵ شماره گیرنده مجاز است."),
+    .max(10, "حداکثر ۱۰ همکار گیرنده مجاز است."),
+);
+
+/** A registered sms.ir template id, or empty to leave that flow disabled. */
+const templateIdSchema = z.preprocess(
+  (value) => (typeof value === "string" ? digitsOnly(value) : value),
+  z
+    .string()
+    .max(20)
+    .refine(
+      (value) => value === "" || /^\d+$/.test(value),
+      "شناسه قالب باید عددی باشد.",
+    )
+    .default(""),
 );
 
 /**
- * A message template.
+ * A parameter name as declared in the sms.ir template.
  *
- * Long enough for a few SMS parts and no longer: the point of the cap is that
- * an administrator can see what a template will cost before it is used.
+ * Latin letters, digits and underscore only — that is what the provider
+ * accepts, and a mismatched name is rejected at send time rather than here.
  */
-const templateSchema = z.string().trim().max(420).default("");
+const paramNameSchema = z
+  .string()
+  .trim()
+  .max(40)
+  .refine(
+    (value) => value === "" || /^[A-Za-z][A-Za-z0-9_]*$/.test(value),
+    "نام پارامتر باید با حرف لاتین شروع شود.",
+  )
+  .default("");
 
 export const smsSettingsFormSchema = z.object({
   enabled: z.coerce.boolean().default(false),
   requirePhoneVerification: z.coerce.boolean().default(true),
-  adminRecipients: recipientListSchema,
-  notifyAdminOnRequest: z.coerce.boolean().default(true),
-  notifyAdminOnAppointment: z.coerce.boolean().default(true),
-  requestStatusTemplates: z.record(z.string(), templateSchema).default({}),
-  appointmentStatusTemplates: z.record(z.string(), templateSchema).default({}),
-  signature: z.string().trim().max(60).default(""),
+
+  staffRecipients: staffRecipientsSchema,
+  notifyStaffOnRequest: z.coerce.boolean().default(true),
+  notifyStaffOnAppointment: z.coerce.boolean().default(true),
+  staffTemplateId: templateIdSchema,
+  staffNameParam: paramNameSchema,
+  staffCodeParam: paramNameSchema,
+
+  updateTemplateId: templateIdSchema,
+  updateCodeParam: paramNameSchema,
 });
 
 export type SmsSettingsFormInput = z.infer<typeof smsSettingsFormSchema>;

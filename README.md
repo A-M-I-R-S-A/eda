@@ -267,6 +267,29 @@ are stored hashed and never written to the log.
 
 ---
 
+---
+
+## Pinned to Next 16.2.12 — do not upgrade blind
+
+`next` and `eslint-config-next` are pinned to **exact** versions, not carets. This is
+deliberate and load-bearing for the current deployment.
+
+Next raised its Linux binary's requirement to **GLIBC_2.30 at version 16.3.0**. The
+production host runs glibc **2.28**, so from 16.3.0 onward the native compiler refuses to
+load and `next build` falls back to WebAssembly — which allocates outside the Node heap,
+needs several times the memory, and is killed by the account's limit. The failure surfaces
+as a bare `Killed` with no explanation, and no amount of `--max-old-space-size` helps,
+because that flag governs a different allocator.
+
+Before changing either version, check what the binary actually requires:
+
+```bash
+curl -sL "https://registry.npmjs.org/@next/swc-linux-x64-gnu/-/swc-linux-x64-gnu-<VERSION>.tgz"   | tar xz -O package/next-swc.linux-x64-gnu.node   | grep -aoE "GLIBC_2\.[0-9]+" | sort -V | tail -1
+```
+
+Anything above the host's `ldd --version` will not load. The constraint disappears if the
+host is moved to glibc 2.29+.
+
 ## Persian & RTL specifics
 
 Several decisions here exist because of Persian typography, not by accident:

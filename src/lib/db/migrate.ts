@@ -134,6 +134,42 @@ function migrateToV3(db: Loose): void {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  v3 → v4                                                                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * SMS moved from free-text bodies to sms.ir templates.
+ *
+ * The provider sends transactional messages by naming a registered template
+ * and supplying parameter values; free text is a separate product this account
+ * does not have. The old settings therefore described something that could
+ * never be sent, and are replaced rather than migrated: template ids cannot be
+ * inferred from message wording, so an administrator has to supply them.
+ *
+ * Recipients are the one thing worth carrying across — they are phone numbers
+ * somebody typed, and the new shape only adds a name beside each.
+ */
+function migrateToV4(db: Loose): void {
+  const settings = isObject(db.settings) ? db.settings : {};
+  const previous = isObject(settings.sms) ? settings.sms : {};
+
+  const carried = asArray<string>(previous.adminRecipients)
+    .filter((phone) => typeof phone === "string" && phone)
+    .map((phone) => ({ name: "", phone }));
+
+  settings.sms = {
+    ...structuredClone(DEFAULT_SMS),
+    enabled: previous.enabled === true,
+    requirePhoneVerification: previous.requirePhoneVerification !== false,
+    notifyStaffOnRequest: previous.notifyAdminOnRequest !== false,
+    notifyStaffOnAppointment: previous.notifyAdminOnAppointment !== false,
+    staffRecipients: carried,
+  };
+
+  db.settings = settings;
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Entry point                                                               */
 /* -------------------------------------------------------------------------- */
 
@@ -159,6 +195,7 @@ export async function migrate(stored: unknown): Promise<Database | null> {
 
   if (version < 2) migrateToV2(db);
   if (version < 3) migrateToV3(db);
+  if (version < 4) migrateToV4(db);
 
   db.version = DB_VERSION;
 

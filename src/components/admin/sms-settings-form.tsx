@@ -5,7 +5,6 @@ import type { SmsSettings } from "@/types";
 import { CSRF_FIELD } from "@/lib/security/csrf-field";
 import { idleState, type FormState } from "@/lib/actions/types";
 import { saveSmsSettingsAction } from "@/lib/actions/settings";
-import { APPOINTMENT_STATUS, REQUEST_STATUS } from "@/lib/config/labels";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Field, Input, Textarea } from "@/components/ui/field";
 import { Alert } from "@/components/ui/states";
@@ -15,17 +14,20 @@ import { DirtyBadge, useUnsavedChanges } from "./dialog";
 /**
  * SMS configuration.
  *
- * Credentials are conspicuously absent: the API key, line number and OTP
- * template id come from the environment. Putting them on a settings screen
- * would make the provider account readable by anyone who reaches the admin
- * panel and would write the key into every database backup.
+ * Two things are conspicuously absent, both deliberately:
  *
- * What *is* editable here is behaviour and wording — the things the office
- * actually needs to change without a deploy.
+ *   • **Message wording.** sms.ir delivers transactional messages through
+ *     templates registered and approved in its own panel; the API supplies
+ *     only parameter values. A box for composing text here would promise an
+ *     ability the account does not have, and every send would be refused.
+ *
+ *   • **Credentials.** The API key comes from the environment. Putting it on a
+ *     settings screen would make the provider account readable by anyone who
+ *     reaches the admin panel, and would write it into every backup.
+ *
+ * What is editable is the mapping: which template, and what its parameters are
+ * called.
  */
-
-const PLACEHOLDER_HELP =
-  "متغیرها: {name} نام متقاضی، {code} کد پیگیری، {status} وضعیت، {institution} نام مؤسسه، {date} و {time} برای نوبت‌ها.";
 
 export function SmsSettingsForm({
   sms,
@@ -63,9 +65,8 @@ export function SmsSettingsForm({
       {!credentialsPresent && (
         <Alert tone="warning" title="کلید سامانه پیامک تنظیم نشده است">
           مقدار <code>SMSIR_API_KEY</code> روی سرور تعریف نشده است. تا زمانی که
-          این متغیر و <code>SMSIR_LINE_NUMBER</code> و{" "}
-          <code>SMSIR_OTP_TEMPLATE_ID</code> تنظیم نشوند، هیچ پیامکی ارسال
-          نمی‌شود. این مقادیر به‌دلایل امنیتی از طریق پنل قابل ویرایش نیستند.
+          این متغیر تنظیم نشود هیچ پیامکی ارسال نمی‌شود. این مقدار به‌دلایل
+          امنیتی از طریق پنل قابل ویرایش نیست.
         </Alert>
       )}
 
@@ -77,6 +78,13 @@ export function SmsSettingsForm({
           {state.message}
         </Alert>
       )}
+
+      <Alert tone="info" title="متن پیامک‌ها در پنل sms.ir تعریف می‌شود">
+        این سامانه پیامک‌ها را از طریق «قالب»‌های ثبت‌شده در پنل sms.ir ارسال
+        می‌کند و تنها مقدار پارامترها را می‌فرستد. بنابراین متن پیام در این صفحه
+        قابل ویرایش نیست؛ آنچه اینجا تنظیم می‌کنید شناسه قالب و نام پارامترهای
+        آن است.
+      </Alert>
 
       <FormSection
         title="وضعیت سرویس"
@@ -98,120 +106,147 @@ export function SmsSettingsForm({
           />
 
           <p className="text-[0.8125rem] leading-[1.9] text-muted">
-            با فعال بودن تأیید شماره، ثبت درخواست مشاوره و رزرو وقت تنها پس از
-            تأیید شماره موبایل ممکن است.
+            تأیید شماره تنها زمانی اعمال می‌شود که «ارسال پیامک» هم فعال باشد؛ در
+            غیر این صورت فرم‌ها بدون تأیید کار می‌کنند تا درخواستی از دست نرود.
             <br />
-            تأیید شماره تنها زمانی اعمال می‌شود که «ارسال پیامک» هم فعال باشد؛
-            در غیر این صورت فرم‌ها بدون تأیید کار می‌کنند تا درخواستی از دست
-            نرود.
+            شناسه قالب کد تأیید از متغیر <code>SMSIR_OTP_TEMPLATE_ID</code> روی
+            سرور خوانده می‌شود.
           </p>
-
-          <Field
-            htmlFor="signature"
-            label="امضای پایان پیامک"
-            hint="به انتهای هر پیامک افزوده می‌شود."
-            error={error("signature")}
-          >
-            <Input
-              id="signature"
-              name="signature"
-              defaultValue={sms.signature}
-              maxLength={60}
-              placeholder="مؤسسه داوری دادآور"
-            />
-          </Field>
         </div>
       </FormSection>
 
       <FormSection
-        title="اطلاع‌رسانی به دفتر"
-        description="پیامک خودکار هنگام دریافت درخواست یا رزرو جدید."
+        title="اطلاع‌رسانی به همکاران"
+        description="پیامک خودکار هنگام ثبت درخواست یا رزرو جدید. قالب باید دو پارامتر داشته باشد: نام همکار و کد پیگیری."
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <Checkbox
-            id="notifyAdminOnRequest"
-            name="notifyAdminOnRequest"
-            defaultChecked={sms.notifyAdminOnRequest}
-            label="با ثبت درخواست مشاوره جدید به دفتر پیامک ارسال شود"
+            id="notifyStaffOnRequest"
+            name="notifyStaffOnRequest"
+            defaultChecked={sms.notifyStaffOnRequest}
+            label="با ثبت درخواست مشاوره جدید پیامک ارسال شود"
           />
 
           <Checkbox
-            id="notifyAdminOnAppointment"
-            name="notifyAdminOnAppointment"
-            defaultChecked={sms.notifyAdminOnAppointment}
-            label="با ثبت رزرو وقت جدید به دفتر پیامک ارسال شود"
+            id="notifyStaffOnAppointment"
+            name="notifyStaffOnAppointment"
+            defaultChecked={sms.notifyStaffOnAppointment}
+            label="با ثبت رزرو وقت جدید پیامک ارسال شود"
           />
 
-          <Field
-            htmlFor="adminRecipients"
-            label="شماره‌های گیرنده"
-            hint="هر شماره در یک خط. اگر خالی بماند، شماره موبایل مؤسسه در تنظیمات عمومی استفاده می‌شود."
-            error={error("adminRecipients")}
-          >
-            <Textarea
-              id="adminRecipients"
-              name="adminRecipients"
-              rows={3}
-              defaultValue={sms.adminRecipients.join("\n")}
-              placeholder={"09121234567\n09129876543"}
-              className="text-start"
-              dir="ltr"
-              invalid={Boolean(error("adminRecipients"))}
-            />
-          </Field>
-        </div>
-      </FormSection>
-
-      <FormSection
-        title="متن پیش‌فرض پیامک درخواست‌ها"
-        description={`این متن‌ها فقط در کادر ارسال پیامک صفحه درخواست از پیش پر می‌شوند؛ ارسال همیشه دستی است. ${PLACEHOLDER_HELP}`}
-      >
-        <div className="flex flex-col gap-5">
-          {(Object.keys(REQUEST_STATUS) as (keyof typeof REQUEST_STATUS)[]).map(
-            (status) => (
-              <Field
-                key={status}
-                htmlFor={`template-request-${status}`}
-                label={REQUEST_STATUS[status].label}
-              >
-                <Textarea
-                  id={`template-request-${status}`}
-                  name={`template.request.${status}`}
-                  rows={2}
-                  maxLength={420}
-                  defaultValue={sms.requestStatusTemplates?.[status] ?? ""}
-                  placeholder="خالی بگذارید تا کادر ارسال بدون متن پیش‌فرض باز شود."
-                />
-              </Field>
-            ),
-          )}
-        </div>
-      </FormSection>
-
-      <FormSection
-        title="متن پیش‌فرض پیامک نوبت‌ها"
-        description={PLACEHOLDER_HELP}
-      >
-        <div className="flex flex-col gap-5">
-          {(
-            Object.keys(APPOINTMENT_STATUS) as (keyof typeof APPOINTMENT_STATUS)[]
-          ).map((status) => (
+          <div className="grid gap-5 sm:grid-cols-3">
             <Field
-              key={status}
-              htmlFor={`template-appointment-${status}`}
-              label={APPOINTMENT_STATUS[status].label}
+              htmlFor="staffTemplateId"
+              label="شناسه قالب"
+              hint="از پنل sms.ir"
+              error={error("staffTemplateId")}
             >
-              <Textarea
-                id={`template-appointment-${status}`}
-                name={`template.appointment.${status}`}
-                rows={2}
-                maxLength={420}
-                defaultValue={sms.appointmentStatusTemplates?.[status] ?? ""}
-                placeholder="خالی بگذارید تا کادر ارسال بدون متن پیش‌فرض باز شود."
+              <Input
+                id="staffTemplateId"
+                name="staffTemplateId"
+                defaultValue={sms.staffTemplateId}
+                ltr
+                inputMode="numeric"
+                placeholder="123456"
+                invalid={Boolean(error("staffTemplateId"))}
               />
             </Field>
-          ))}
+
+            <Field
+              htmlFor="staffNameParam"
+              label="پارامتر نام"
+              error={error("staffNameParam")}
+            >
+              <Input
+                id="staffNameParam"
+                name="staffNameParam"
+                defaultValue={sms.staffNameParam}
+                ltr
+                placeholder="NAME"
+              />
+            </Field>
+
+            <Field
+              htmlFor="staffCodeParam"
+              label="پارامتر کد"
+              error={error("staffCodeParam")}
+            >
+              <Input
+                id="staffCodeParam"
+                name="staffCodeParam"
+                defaultValue={sms.staffCodeParam}
+                ltr
+                placeholder="CODE"
+              />
+            </Field>
+          </div>
+
+          <Field
+            htmlFor="staffRecipients"
+            label="همکاران گیرنده"
+            hint="هر نفر در یک خط، با قالب: نام | شماره — مثال: علی رضایی | 09121234567"
+            error={error("staffRecipients")}
+          >
+            <Textarea
+              id="staffRecipients"
+              name="staffRecipients"
+              rows={4}
+              defaultValue={(sms.staffRecipients ?? [])
+                .map((person) => `${person.name} | ${person.phone}`)
+                .join("\n")}
+              placeholder={"علی رضایی | 09121234567\nمریم احمدی | 09129876543"}
+              invalid={Boolean(error("staffRecipients"))}
+            />
+          </Field>
+
+          <p className="text-[0.8125rem] leading-[1.9] text-muted">
+            به هر نفر یک پیامک جداگانه ارسال می‌شود، چون قالب نام او را در متن
+            می‌آورد.
+          </p>
         </div>
+      </FormSection>
+
+      <FormSection
+        title="اطلاع‌رسانی به متقاضی"
+        description="قالبی که کارشناس از صفحه درخواست یا نوبت ارسال می‌کند. تنها یک پارامتر دارد: کد پیگیری."
+      >
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field
+            htmlFor="updateTemplateId"
+            label="شناسه قالب به‌روزرسانی"
+            hint="خالی بگذارید تا ارسال غیرفعال بماند."
+            error={error("updateTemplateId")}
+          >
+            <Input
+              id="updateTemplateId"
+              name="updateTemplateId"
+              defaultValue={sms.updateTemplateId}
+              ltr
+              inputMode="numeric"
+              placeholder="123457"
+              invalid={Boolean(error("updateTemplateId"))}
+            />
+          </Field>
+
+          <Field
+            htmlFor="updateCodeParam"
+            label="پارامتر کد"
+            error={error("updateCodeParam")}
+          >
+            <Input
+              id="updateCodeParam"
+              name="updateCodeParam"
+              defaultValue={sms.updateCodeParam}
+              ltr
+              placeholder="CODE"
+            />
+          </Field>
+        </div>
+
+        <p className="mt-4 text-[0.8125rem] leading-[1.9] text-muted">
+          ارسال این پیامک هیچ‌گاه خودکار نیست: کارشناس در صفحه هر درخواست دکمه
+          ارسال را می‌زند.
+        </p>
       </FormSection>
 
       <div className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-white/95 backdrop-blur lg:inset-s-auto">

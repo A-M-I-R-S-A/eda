@@ -84,11 +84,29 @@ export function checkEnvironment(): EnvReport {
 
   /* -- storage ----------------------------------------------------------- */
 
-  for (const [name, purpose] of [
-    ["UPLOAD_DIR", "client case documents"],
-    ["MEDIA_DIR", "media library files"],
-  ] as const) {
-    const value = process.env[name];
+  /**
+   * Read with static property access, never `process.env[name]`.
+   *
+   * A bundler can only reason about `process.env.FOO` written out literally.
+   * With a computed key it may substitute a partial environment object, and
+   * the variable reads as unset even though it is plainly there in the file —
+   * which produced a confident, wrong warning telling an operator to fix a
+   * path that was already correct.
+   */
+  const storage = [
+    {
+      name: "UPLOAD_DIR",
+      value: process.env.UPLOAD_DIR,
+      purpose: "client case documents",
+    },
+    {
+      name: "MEDIA_DIR",
+      value: process.env.MEDIA_DIR,
+      purpose: "media library files",
+    },
+  ];
+
+  for (const { name, value, purpose } of storage) {
     if (isProd && (!value || value.startsWith("."))) {
       warnings.push(
         `${name} is unset or relative, so ${purpose} are stored inside the application directory and will be lost on the next deploy. Point it at an absolute path outside the deploy directory.`,
@@ -98,17 +116,17 @@ export function checkEnvironment(): EnvReport {
 
   /* -- SMS --------------------------------------------------------------- */
 
-  if (process.env.SMSIR_API_KEY) {
-    if (!process.env.SMSIR_LINE_NUMBER) {
-      warnings.push(
-        "SMSIR_LINE_NUMBER is not set; status and office-alert messages cannot be sent (one-time codes still can).",
-      );
-    }
-    if (!process.env.SMSIR_OTP_TEMPLATE_ID) {
-      warnings.push(
-        "SMSIR_OTP_TEMPLATE_ID is not set; phone verification codes cannot be sent.",
-      );
-    }
+  /**
+   * Only the OTP template id lives in the environment.
+   *
+   * The staff-alert and client-update template ids are configured in the admin
+   * panel — they are not secrets, and the office changes them when sms.ir
+   * approves a new template, which should not require a deploy.
+   */
+  if (process.env.SMSIR_API_KEY && !process.env.SMSIR_OTP_TEMPLATE_ID) {
+    warnings.push(
+      "SMSIR_OTP_TEMPLATE_ID is not set; phone verification codes cannot be sent.",
+    );
   }
 
   return { errors, warnings };

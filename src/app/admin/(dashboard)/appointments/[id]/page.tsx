@@ -18,7 +18,7 @@ import {
   updateAppointmentStatusAction,
 } from "@/lib/actions/admin";
 import { sendAppointmentSmsAction } from "@/lib/actions/sms";
-import { appointmentStatusMessage, smsReady } from "@/lib/sms/service";
+import { statusUpdateBlockedReason } from "@/lib/sms/service";
 import {
   formatJalali,
   formatJalaliDateTime,
@@ -59,19 +59,13 @@ export default async function AdminAppointmentDetailPage({ params }: PageProps) 
 
   if (!appointment) notFound();
 
-  const [csrfToken, settings, smsHistory, canSend] = await Promise.all([
+  const [csrfToken, settings, smsHistory, smsBlocked] = await Promise.all([
     getCsrfToken(),
     getSettings(),
     listSmsForEntity(appointment.id),
-    smsReady(),
+    statusUpdateBlockedReason(),
   ]);
 
-  // Prefilled from the template for the booking's current status.
-  const smsDraft = appointmentStatusMessage(
-    appointment,
-    appointment.status,
-    settings,
-  );
   const status = APPOINTMENT_STATUS[appointment.status];
   
 
@@ -220,16 +214,17 @@ export default async function AdminAppointmentDetailPage({ params }: PageProps) 
 
           <Panel
             title="ارسال پیامک به متقاضی"
-            description="متن پیش‌فرض بر اساس وضعیت فعلی آماده شده است؛ پیش از ارسال آن را بازبینی کنید."
+            description="پیامک از قالب تعریف‌شده در sms.ir ارسال می‌شود و تنها کد رزرو به آن داده می‌شود."
           >
             <SmsComposer
               action={sendAppointmentSmsAction}
               id={appointment.id}
               csrfToken={csrfToken}
               recipient={appointment.phone}
-              defaultBody={smsDraft}
+              code={appointment.bookingCode}
+              templateId={settings.sms.updateTemplateId}
               history={smsHistory}
-              ready={canSend}
+              blockedReason={smsBlocked}
             />
           </Panel>
 

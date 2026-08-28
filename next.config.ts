@@ -75,22 +75,19 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   /**
-   * Self-contained server bundle.
+   * Optional escape hatch for memory-constrained builds.
    *
-   * Produces `.next/standalone/server.js` with only the traced dependencies
-   * beside it. Two reasons this is the right target here:
+   * `next build` runs a full TypeScript program in-process, which is a
+   * substantial share of the build's peak memory. On a shared host with a low
+   * cap that alone can be the difference between a build and an OOM kill.
    *
-   *   • Shared Node hosts (cPanel/DirectAdmin via Passenger) start an app by
-   *     running one file, not by running `next start`. Standalone gives them
-   *     that file — and unlike a hand-written custom server, it is the real
-   *     Next server, so `proxy.ts` and the rest still run.
-   *   • It ships without `node_modules`, which matters on hosts that meter
-   *     inode counts.
-   *
-   * `npm run build` copies `public/` and `.next/static` in afterwards; Next
-   * deliberately leaves those out, expecting a CDN.
+   * Off by default — types are checked on every build. Set
+   * `NEXT_SKIP_TYPECHECK=true` only where `npm run typecheck` has already been
+   * run separately, so the safety is moved rather than removed.
    */
-  output: "standalone",
+  typescript: {
+    ignoreBuildErrors: process.env.NEXT_SKIP_TYPECHECK === "true",
+  },
 
   poweredByHeader: false,
   reactStrictMode: true,
@@ -101,7 +98,37 @@ const nextConfig: NextConfig = {
     imageSizes: [64, 96, 128, 192, 256, 384],
   },
   experimental: {
-    optimizePackageImports: ["@/components/ui"],
+    /**
+     * Cap build parallelism.
+     *
+     * Next sizes its page-data workers from the CPU count. On shared hosting
+     * that number describes the *machine* — a cPanel box can report 31 cores —
+     * while the memory ceiling applies to your account alone. The result is 31
+     * Node processes against a fraction of the RAM, and the kernel's OOM killer
+     * ends the build with a bare `Killed` and no explanation.
+     *
+     * Two is safe on a constrained host and still parallel. Raise it with
+     * `NEXT_BUILD_CPUS` on a machine that has the memory to spare.
+     */
+    cpus: Math.max(1, Number(process.env.NEXT_BUILD_CPUS || 2)),
+
+    /**
+     * Child processes rather than worker threads: their memory is reclaimed
+     * on exit instead of accumulating in one long-lived heap, which is what
+     * keeps the peak under an account cap.
+     */
+    workerThreads: false,
+
+    /**
+     * Compile in the main process instead of a spawned build worker.
+     *
+     * The worker is a second Node process with its own heap, and on a capped
+     * account that doubling is what the kernel notices. Keeping compilation
+     * in-process also means `NODE_OPTIONS=--max-old-space-size` actually
+     * governs the process doing the work, so V8 collects garbage rather than
+     * growing past the ceiling and being killed.
+     */
+    webpackBuildWorker: false,
   },
   /**
    * The institution has a single arbitrator, so the plural `/arbitrators`

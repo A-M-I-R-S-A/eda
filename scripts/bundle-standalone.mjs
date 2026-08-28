@@ -9,7 +9,7 @@
  * Runs automatically after `npm run build`. Plain Node with no dependencies,
  * so it behaves the same on a Windows workstation and on the host's shell.
  */
-import { cp, access, mkdir, chmod } from "node:fs/promises";
+import { cp, access, mkdir, chmod, rm } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,6 +68,37 @@ for (const name of [".env.production", ".env.production.local"]) {
   await cp(source, destination);
   await chmod(destination, 0o600).catch(() => {});
   console.log(`[bundle] ${name} → .next/standalone/${name} (0600)`);
+}
+
+/**
+ * Strip environment files that must never influence production.
+ *
+ * Next's file tracing copies every `.env*` in the project into the standalone
+ * output, and its load order puts `.env.local` **above** `.env.production`.
+ * A developer's leftover `.env.local` therefore silently wins on the server —
+ * shipping a development AUTH_SECRET, a development seed password, and a
+ * relative UPLOAD_DIR that puts client case documents inside the deploy
+ * directory, where the next deployment erases them.
+ *
+ * Nothing about that failure is visible: the app starts, serves, and signs
+ * sessions with the wrong key. So the files are removed from the bundle
+ * rather than trusted not to matter. The originals in the project root are
+ * untouched — local development still works exactly as before.
+ */
+const STRIP = [
+  ".env.local",
+  ".env.development",
+  ".env.development.local",
+  ".env.test",
+  ".env.test.local",
+  ".env.example",
+];
+
+for (const name of STRIP) {
+  const target = join(standalone, name);
+  if (!(await exists(target))) continue;
+  await rm(target, { force: true });
+  console.warn(`[bundle] removed ${name} from the bundle (it would override .env.production)`);
 }
 
 console.log("[bundle] standalone server ready: .next/standalone/server.js");

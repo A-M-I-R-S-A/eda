@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import type { HeaderSettings, NavLink } from "@/types";
 import { cn } from "@/lib/utils/cn";
@@ -119,40 +118,27 @@ export function SiteHeader({
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
-  const brand = (size: "sm" | "md") =>
-    header.logoUrl ? (
-      <Link href="/" className="flex min-w-0 items-center gap-3">
-        <Image
-          src={header.logoUrl}
-          alt={institutionName}
-          width={Math.round(header.logoHeight * 4)}
-          height={header.logoHeight}
-          style={{ height: header.logoHeight, width: "auto" }}
-          className="object-contain"
-          priority
-        />
-        {header.showWordmark && (
-          <span className="hidden min-w-0 flex-col sm:flex">
-            <span className="truncate text-[0.9375rem] font-bold text-navy-950">
-              {institutionName}
-            </span>
-            {header.descriptor && (
-              <span className="truncate text-[0.6875rem] text-muted">
-                {header.descriptor}
-              </span>
-            )}
-          </span>
-        )}
-      </Link>
-    ) : (
-      <Logo
-        name={institutionName}
-        shortName={institutionShortName}
-        descriptor={header.descriptor}
-        size={size}
-        className="min-w-0 flex-1 lg:flex-none"
-      />
-    );
+  /**
+   * One lockup for every case.
+   *
+   * `Logo` swaps the monogram for the uploaded image and keeps the name under
+   * `showWordmark`, so the two settings stay independent. The previous
+   * hand-rolled version for the uploaded-logo case hid the name below `sm`
+   * outright rather than falling back to `shortName`, which is why a phone
+   * showed a bare logo and nothing else.
+   */
+  const brand = (size: "sm" | "md") => (
+    <Logo
+      name={institutionName}
+      shortName={institutionShortName}
+      descriptor={header.descriptor}
+      size={size}
+      logoUrl={header.logoUrl}
+      logoHeight={header.logoHeight}
+      showWordmark={header.showWordmark}
+      className="min-w-0 flex-1 lg:flex-none"
+    />
+  );
 
   const showUtility =
     header.showUtilityBar &&
@@ -358,11 +344,19 @@ export function SiteHeader({
             )}
           >
             <div className="flex h-[4.5rem] shrink-0 items-center justify-between border-b border-line px-5">
+              {/*
+                The drawer is at most 21rem wide and its header 4.5rem tall, so
+                a tall logo is capped here rather than pushing the close button
+                out of reach.
+              */}
               <Logo
                 name={institutionName}
                 shortName={institutionShortName}
                 descriptor={header.descriptor}
                 size="sm"
+                logoUrl={header.logoUrl}
+                logoHeight={Math.min(header.logoHeight || 32, 36)}
+                showWordmark={header.showWordmark}
               />
               <button
                 type="button"

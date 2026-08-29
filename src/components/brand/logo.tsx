@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 
@@ -106,6 +107,21 @@ export function Wordmark({
   );
 }
 
+/**
+ * The institution's lockup: a mark, then its name.
+ *
+ * An uploaded logo replaces the **monogram**, never the name — the two are
+ * independent, because a logo that is a bare symbol still needs the
+ * institution written beside it, and one that already contains the name does
+ * not. `showWordmark` decides that, and it is the same switch in every place
+ * the lockup appears: the header, the sticky header, and the mobile drawer.
+ *
+ * Every caller goes through here rather than assembling the pieces itself. The
+ * header used to hand-roll its own version for the uploaded-logo case, which
+ * is how the drawer ended up still drawing the monogram after a logo had been
+ * assigned, and how the name came to be hidden outright on small screens
+ * instead of falling back to `shortName`.
+ */
 export function Logo({
   name,
   shortName,
@@ -114,6 +130,9 @@ export function Logo({
   size = "md",
   href = "/",
   className,
+  logoUrl,
+  logoHeight,
+  showWordmark = true,
 }: {
   name: string;
   shortName?: string;
@@ -122,7 +141,16 @@ export function Logo({
   size?: "sm" | "md";
   href?: string;
   className?: string;
+  /** Uploaded logo. Replaces the monogram. */
+  logoUrl?: string;
+  /** Rendered height of the uploaded logo in px; defaults to the mark's size. */
+  logoHeight?: number;
+  /** Whether the name sits beside the mark. */
+  showWordmark?: boolean;
 }) {
+  const markSize = size === "sm" ? 32 : 38;
+  const imageHeight = logoHeight || markSize;
+
   return (
     <Link
       href={href}
@@ -132,21 +160,40 @@ export function Logo({
         className,
       )}
     >
-      <Monogram size={size === "sm" ? 32 : 38} tone={tone} />
-      <span
-        aria-hidden="true"
-        className={cn(
-          "h-8 w-px shrink-0",
-          tone === "light" ? "bg-white/15" : "bg-line-2",
-        )}
-      />
-      <Wordmark
-        name={name}
-        shortName={shortName}
-        descriptor={descriptor}
-        tone={tone}
-        size={size}
-      />
+      {logoUrl ? (
+        <Image
+          src={logoUrl}
+          // The link's `aria-label` already announces the institution, so
+          // naming the image too would say it twice.
+          alt=""
+          width={Math.round(imageHeight * 4)}
+          height={imageHeight}
+          style={{ height: imageHeight, width: "auto" }}
+          className="shrink-0 object-contain"
+          priority
+        />
+      ) : (
+        <Monogram size={markSize} tone={tone} />
+      )}
+
+      {showWordmark && (
+        <>
+          <span
+            aria-hidden="true"
+            className={cn(
+              "h-8 w-px shrink-0",
+              tone === "light" ? "bg-white/15" : "bg-line-2",
+            )}
+          />
+          <Wordmark
+            name={name}
+            shortName={shortName}
+            descriptor={descriptor}
+            tone={tone}
+            size={size}
+          />
+        </>
+      )}
     </Link>
   );
 }

@@ -15,6 +15,7 @@ import {
   type OtpVerifyPayload,
 } from "@/lib/actions/otp";
 import { idleState, type FormState } from "@/lib/actions/types";
+import type { OtpPurpose } from "@/lib/sms/constants";
 import { CSRF_FIELD } from "@/lib/security/csrf-field";
 import { digitsOnly, fa } from "@/lib/utils/persian";
 import { Button } from "@/components/ui/button";
@@ -31,7 +32,7 @@ import { Alert } from "@/components/ui/states";
  *     that already owns the phone input (the booking wizard keeps every value
  *     in its own step state).
  *   • `PhoneVerification` — the input and the exchange together, for the
- *     ordinary single-page consultation form.
+ *     ordinary single-page form.
  *
  * ── Why not a nested form ─────────────────────────────────────────────────
  * Both live *inside* an outer `<form>`, and HTML forbids nesting. The actions
@@ -50,7 +51,7 @@ import { Alert } from "@/components/ui/states";
 
 export interface PhoneChallengeProps {
   csrfToken: string;
-  purpose: "consultation" | "appointment";
+  purpose: OtpPurpose;
   /** The number to verify, owned by the caller. */
   phone: string;
   /**
@@ -257,7 +258,7 @@ export function PhoneChallenge({
 
 export interface PhoneVerificationProps {
   csrfToken: string;
-  purpose: "consultation" | "appointment";
+  purpose: OtpPurpose;
   /** When false this is an ordinary phone input with no challenge. */
   required: boolean;
   error?: string | string[];

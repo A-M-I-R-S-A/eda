@@ -5,6 +5,7 @@ import { SignJWT, jwtVerify } from "jose";
 import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 import { ensureSchema, getPool } from "@/lib/db/mysql";
 import { newId } from "@/lib/utils/id";
+import type { OtpPurpose } from "./constants";
 
 /**
  * Phone verification by one-time code.
@@ -30,7 +31,7 @@ export const OTP_PROOF_TTL_SECONDS = Number(
   process.env.OTP_PROOF_TTL_SECONDS || 30 * 60,
 );
 
-export type OtpPurpose = "consultation" | "appointment";
+export type { OtpPurpose };
 
 const PROOF_ISSUER = "dadavar-law";
 const PROOF_AUDIENCE = "phone-verification";

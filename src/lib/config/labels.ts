@@ -11,7 +11,6 @@ import type {
   NewsletterStatus,
   RequestStatus,
   RequestType,
-  ServiceCategory,
   SocialPlatform,
   SubmissionStatus,
   UserRole,
@@ -121,7 +120,7 @@ export const APPOINTMENT_STATUS: Record<
 /**
  * The vocabulary shared by every public form.
  *
- * Contact messages, consultation enquiries and newsletter sign-ups all land in
+ * Contact messages and newsletter sign-ups all land in
  * one inbox, so they answer to one status list rather than three.
  */
 export const SUBMISSION_STATUS: Record<
@@ -158,6 +157,13 @@ export const NEWSLETTER_STATUS: Record<
 /*  Request taxonomy                                                          */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Labels for stored requests.
+ *
+ * The public form that produced them was removed, but the records were not:
+ * the inbox and the tracking lookup still have to render every value that was
+ * ever written.
+ */
 export const REQUEST_TYPE: Record<RequestType, string> = {
   consultation: "مشاوره حقوقی",
   arbitration: "درخواست داوری",
@@ -166,10 +172,6 @@ export const REQUEST_TYPE: Record<RequestType, string> = {
   representation: "وکالت و طرح دعوا",
 };
 
-export const REQUEST_TYPE_OPTIONS = (
-  Object.keys(REQUEST_TYPE) as RequestType[]
-).map((value) => ({ value, label: REQUEST_TYPE[value] }));
-
 export const CONTACT_METHOD: Record<ContactMethod, string> = {
   phone: "تماس تلفنی",
   whatsapp: "واتس‌اپ",
@@ -177,36 +179,11 @@ export const CONTACT_METHOD: Record<ContactMethod, string> = {
   "in-person": "مراجعه حضوری",
 };
 
-export const CONTACT_METHOD_OPTIONS = (
-  Object.keys(CONTACT_METHOD) as ContactMethod[]
-).map((value) => ({ value, label: CONTACT_METHOD[value] }));
-
 export const CALL_WINDOW: Record<CallWindow, string> = {
   morning: "صبح (۹ تا ۱۲)",
   afternoon: "بعدازظهر (۱۲ تا ۱۷)",
   evening: "عصر (۱۷ تا ۲۰)",
 };
-
-export const CALL_WINDOW_OPTIONS = (
-  Object.keys(CALL_WINDOW) as CallWindow[]
-).map((value) => ({ value, label: CALL_WINDOW[value] }));
-
-/**
- * Legal areas offered in the consultation form.
- *
- * These label the *subject of the enquiry*, not services the institution
- * claims to provide. Keep the list domestic — no cross-border entries.
- */
-export const LEGAL_AREAS: string[] = [
-  "داوری",
-  "میانجی‌گری و سازش",
-  "قراردادهای تجاری",
-  "پیمانکاری و ساخت",
-  "اختلافات شرکا و سهامداران",
-  "املاک و مستغلات",
-  "مطالبات و اسناد تجاری",
-  "سایر موضوعات حقوقی",
-];
 
 /* -------------------------------------------------------------------------- */
 /*  Appointments                                                              */
@@ -266,12 +243,6 @@ export const WEEKDAYS: string[] = [
 /*  Content taxonomy                                                          */
 /* -------------------------------------------------------------------------- */
 
-export const SERVICE_CATEGORY: Record<ServiceCategory, string> = {
-  arbitration: "داوری",
-  "dispute-resolution": "حل‌وفصل اختلافات",
-  advisory: "مشاوره و قراردادها",
-};
-
 /**
  * Article categories and FAQ groups are CMS records now.
  *
@@ -320,7 +291,7 @@ export const USER_ROLE: Record<UserRole, string> = {
 
 export const USER_ROLE_DESCRIPTION: Record<UserRole, string> = {
   admin: "دسترسی کامل به همه بخش‌ها، شامل تنظیمات، کاربران و کدهای پیشرفته.",
-  editor: "مدیریت صفحات، مقالات، خدمات، رسانه‌ها و سایر محتوای سایت.",
+  editor: "مدیریت صفحات، مقالات، رسانه‌ها و سایر محتوای سایت.",
   manager: "مدیریت فرم‌ها، درخواست‌ها و نوبت‌ها؛ بدون دسترسی به تنظیمات سایت.",
   client: "کاربر عادی وب‌سایت؛ دسترسی به پنل مدیریت ندارد.",
 };

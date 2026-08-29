@@ -48,12 +48,11 @@ export const DEFAULT_HEADER: HeaderSettings = {
   nav: [
     nav("صفحه اصلی", "/", 0),
     nav("درباره مجموعه", "/about", 1),
-    nav("خدمات", "/services", 2),
-    nav("داوری", "/arbitration", 3),
-    nav("درباره داور", "/arbitrator", 4),
-    nav("مقالات", "/articles", 5),
-    nav("پرسش‌های متداول", "/faq", 6),
-    nav("تماس با ما", "/contact", 7),
+    nav("داوری", "/arbitration", 2),
+    nav("درباره داور", "/arbitrator", 3),
+    nav("مقالات", "/articles", 4),
+    nav("پرسش‌های متداول", "/faq", 5),
+    nav("تماس با ما", "/contact", 6),
   ],
   ctaVisible: true,
   ctaLabel: "رزرو وقت",
@@ -61,10 +60,7 @@ export const DEFAULT_HEADER: HeaderSettings = {
   style: "classic",
   sticky: true,
   showUtilityBar: true,
-  utilityLinks: [
-    nav("پیگیری درخواست", "/tracking", 0),
-    nav("درخواست مشاوره", "/consultation", 1),
-  ],
+  utilityLinks: [nav("پیگیری درخواست", "/tracking", 0)],
   showPhone: true,
   showHours: true,
   mobileMenuEnabled: true,
@@ -74,10 +70,7 @@ export const DEFAULT_HEADER: HeaderSettings = {
     nav("رزرو وقت مشاوره", "/appointment", 0, {
       description: "انتخاب نوع جلسه، تاریخ و ساعت",
     }),
-    nav("درخواست مشاوره", "/consultation", 1, {
-      description: "ثبت شرح موضوع و دریافت کد پیگیری",
-    }),
-    nav("پیگیری درخواست", "/tracking", 2, {
+    nav("پیگیری درخواست", "/tracking", 1, {
       description: "مشاهده وضعیت پرونده با کد پیگیری",
     }),
   ],
@@ -100,11 +93,10 @@ export const DEFAULT_FOOTER: FooterSettings = {
       links: [
         nav("صفحه اصلی", "/", 0),
         nav("درباره مجموعه", "/about", 1),
-        nav("خدمات", "/services", 2),
-        nav("داوری", "/arbitration", 3),
-        nav("مقالات", "/articles", 4),
-        nav("پرسش‌های متداول", "/faq", 5),
-        nav("تماس با ما", "/contact", 6),
+        nav("داوری", "/arbitration", 2),
+        nav("مقالات", "/articles", 3),
+        nav("پرسش‌های متداول", "/faq", 4),
+        nav("تماس با ما", "/contact", 5),
       ],
     },
   ],
@@ -112,10 +104,7 @@ export const DEFAULT_FOOTER: FooterSettings = {
     nav("رزرو وقت مشاوره", "/appointment", 0, {
       description: "انتخاب نوع جلسه، تاریخ و ساعت",
     }),
-    nav("درخواست مشاوره", "/consultation", 1, {
-      description: "ثبت شرح موضوع و دریافت کد پیگیری",
-    }),
-    nav("پیگیری درخواست", "/tracking", 2, {
+    nav("پیگیری درخواست", "/tracking", 1, {
       description: "مشاهده وضعیت پرونده با کد پیگیری",
     }),
   ],
@@ -126,7 +115,6 @@ export const DEFAULT_FOOTER: FooterSettings = {
   copyright: "© {year} — تمامی حقوق برای {name} محفوظ است.",
   showContactBlock: true,
   showSocials: true,
-  showServiceLinks: true,
   showAdminLink: true,
   showNewsletter: false,
   newsletterTitle: "خبرنامه حقوقی",
@@ -301,13 +289,23 @@ export const DEFAULT_APPOINTMENTS: AppointmentSettings = {
  * parameter values — so what is configured is which template to use and what
  * its parameters are called. The default parameter names match sms.ir's own
  * convention; change them to whatever your registered template declares.
+ *
+ * Credentials start empty rather than reading the environment at module load:
+ * an empty value means "use the environment variable", so an installation
+ * configured that way keeps sending, and one configured from the panel does
+ * not have its key silently overwritten on the next deploy.
  */
 export const DEFAULT_SMS: SmsSettings = {
   enabled: false,
   requirePhoneVerification: true,
 
+  apiKey: "",
+  lineNumber: "",
+
+  otpTemplateId: "",
+  otpCodeParam: "CODE",
+
   staffRecipients: [],
-  notifyStaffOnRequest: true,
   notifyStaffOnAppointment: true,
   staffTemplateId: "",
   staffNameParam: "NAME",

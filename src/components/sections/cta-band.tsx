@@ -9,7 +9,7 @@ import { Eyebrow } from "@/components/ui/section";
  * Closing call-to-action.
  *
  * Reused at the foot of most public pages so every route ends with the two
- * primary journeys — book a consultation, or file a request — plus a direct
+ * primary journeys — book a consultation, or get in touch — plus a direct
  * phone line for visitors who would rather talk to someone.
  */
 export function CtaBand({
@@ -56,12 +56,12 @@ export function CtaBand({
             </ButtonLink>
 
             <ButtonLink
-              href={ROUTES.consultation}
+              href={ROUTES.contact}
               variant="outline"
               size="lg"
               className="sm:min-w-[12.5rem]"
             >
-              ثبت درخواست
+              تماس با مؤسسه
             </ButtonLink>
           </div>
         </div>

@@ -9,6 +9,7 @@ import type {
   HeaderSettings,
   SeoSettings,
   SiteSettings,
+  SmsSettings,
 } from "@/types";
 import {
   getRevision,
@@ -21,6 +22,7 @@ import {
   updateHeaderSettings,
   updateSeoSettings,
   updateSettings,
+  updateSmsSettings,
 } from "@/lib/db";
 import { ROUTES } from "@/lib/config/routes";
 import {
@@ -41,9 +43,18 @@ import { errorState, successState, type FormState } from "./types";
  * reversible.
  */
 
-/** Restoring the advanced group can change what runs on every page. */
+/**
+ * Two groups restore to more than a display preference.
+ *
+ * `customCode` changes what runs on every page, and `sms` decides what the
+ * institution's SMS credit is spent on. Both are edited behind `advanced`, so
+ * rolling them back has to ask for the same capability — otherwise history is
+ * a way around the gate on the screen itself.
+ */
 const GROUP_PERMISSION = (group: SettingsGroup) =>
-  group === "customCode" ? ("advanced" as const) : ("settings" as const);
+  group === "customCode" || group === "sms"
+    ? ("advanced" as const)
+    : ("settings" as const);
 
 async function applyGroup(
   group: SettingsGroup,
@@ -68,6 +79,17 @@ async function applyGroup(
     case "appointments":
       await updateAppointmentSettings(snapshot as AppointmentSettings);
       return;
+    case "sms": {
+      /**
+       * The API key is never snapshotted, so it is never restored either —
+       * `updateSmsSettings` takes a patch, and dropping the key from it leaves
+       * whatever is currently stored in place. A rollback of the template
+       * mapping must not silently swap the account the messages are sent from.
+       */
+      const { apiKey: _ignored, ...rest } = (snapshot ?? {}) as SmsSettings;
+      await updateSmsSettings(rest);
+      return;
+    }
     case "general":
     default:
       // The general group is a slice of the settings record rather than a

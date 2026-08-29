@@ -7,7 +7,6 @@ import type {
   FaqItem,
   PageSection,
   SectionData,
-  Service,
   SiteSettings,
   Testimonial,
 } from "@/types";
@@ -24,7 +23,6 @@ import { Counter } from "@/components/ui/counter";
 import { Accordion } from "@/components/ui/accordion";
 import { Portrait } from "@/components/brand/portrait";
 import { HeroVisual } from "@/components/brand/hero-visual";
-import { ServiceCard } from "@/components/cards/service-card";
 import { ArticleCard } from "@/components/cards/article-card";
 import { ContactForm } from "@/components/forms/contact-form";
 import { SectionHeader, gridColumns } from "./shell";
@@ -37,7 +35,7 @@ import { SectionHeader, gridColumns } from "./shell";
  * cleared, or one added to the library after the record was written, degrades
  * to an empty state instead of throwing.
  *
- * Collection sections (services, articles, FAQ, team, testimonials) never
+ * Collection sections (articles, FAQ, team, testimonials) never
  * query anything themselves — the page renderer fetches once and passes the
  * results down, which keeps a page with six collection sections at one round
  * of queries rather than six.
@@ -45,7 +43,6 @@ import { SectionHeader, gridColumns } from "./shell";
 
 export interface SectionContext {
   settings: SiteSettings;
-  services: Service[];
   articles: Article[];
   faqs: FaqItem[];
   team: Arbitrator[];
@@ -378,46 +375,6 @@ export function RichTextBlock({ section }: BlockProps) {
         </div>
       )}
     </div>
-  );
-}
-
-/* ========================================================================== */
-/*  Services                                                                  */
-/* ========================================================================== */
-
-export function ServicesBlock({ section, context }: BlockProps) {
-  const { data } = section;
-  const onDark = onDarkOf(section);
-  const category = str(data, "category");
-  const limit = num(data, "limit", 6);
-
-  const items = context.services
-    .filter((service) => !category || service.category === category)
-    .slice(0, limit);
-
-  if (!items.length) return <EmptyNotice onDark={onDark} label="خدمتی برای نمایش ثبت نشده است." />;
-
-  return (
-    <>
-      <SectionHeader
-        data={data}
-        onDark={onDark}
-        action={<SectionAction data={data} onDark={onDark} />}
-      />
-      <div
-        className={cn(
-          "mt-12 grid gap-px",
-          onDark ? "bg-white/10" : "border border-line bg-line",
-          gridColumns(columns(data)),
-        )}
-      >
-        {items.map((service, index) => (
-          <Reveal key={service.id} delay={index * 60} className="flex">
-            <ServiceCard service={service} index={index} className="w-full" />
-          </Reveal>
-        ))}
-      </div>
-    </>
   );
 }
 

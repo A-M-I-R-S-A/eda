@@ -261,12 +261,12 @@ export default async function ArbitratorPage() {
                   <hr className="hairline my-6" />
 
                   <ButtonLink
-                    href={ROUTES.consultation}
+                    href={ROUTES.contact}
                     variant="outline"
                     size="sm"
                     block
                   >
-                    ثبت درخواست داوری
+                    تماس با مؤسسه
                   </ButtonLink>
                 </div>
               </div>
@@ -417,11 +417,11 @@ function ProfileHeader({
                 </ButtonLink>
               )}
               <ButtonLink
-                href={ROUTES.consultation}
+                href={ROUTES.contact}
                 variant="outline-light"
                 size="lg"
               >
-                ثبت درخواست مشاوره
+                تماس با مؤسسه
               </ButtonLink>
             </div>
           </div>

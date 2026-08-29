@@ -12,8 +12,6 @@ import type { Permission } from "@/lib/auth/permissions";
 export const ROUTES = {
   home: "/",
   about: "/about",
-  services: "/services",
-  service: (slug: string) => `/services/${slug}`,
   arbitration: "/arbitration",
   /**
    * The institution has ONE arbitrator, so the canonical profile lives at a
@@ -28,7 +26,6 @@ export const ROUTES = {
   articleCategory: (slug: string) => `/articles?category=${slug}`,
   faq: "/faq",
   contact: "/contact",
-  consultation: "/consultation",
   appointment: "/appointment",
   tracking: "/tracking",
   trackingResult: (code: string) => `/tracking?code=${encodeURIComponent(code)}`,
@@ -57,11 +54,6 @@ export const ROUTES = {
     articleRevisions: (id: string) => `/admin/articles/${id}/revisions`,
 
     categories: "/admin/categories",
-
-    services: "/admin/services",
-    serviceNew: "/admin/services/new",
-    serviceEdit: (id: string) => `/admin/services/${id}`,
-    serviceRevisions: (id: string) => `/admin/services/${id}/revisions`,
 
     arbitrators: "/admin/arbitrators",
     arbitratorNew: "/admin/arbitrators/new",
@@ -129,11 +121,12 @@ export const RESERVED_SLUGS: string[] = [
   "arbitrator",
   "arbitrators",
   "articles",
-  "consultation",
   "contact",
   "faq",
-  "services",
   "tracking",
+  // No page of its own any more, but a permanent redirect to `/contact` still
+  // answers here, so a CMS page at this slug would save and never render.
+  "consultation",
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -208,12 +201,6 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         label: "دسته‌بندی‌ها",
         href: ROUTES.admin.categories,
         icon: "tag",
-        permission: "content",
-      },
-      {
-        label: "خدمات",
-        href: ROUTES.admin.services,
-        icon: "briefcase",
         permission: "content",
       },
       {

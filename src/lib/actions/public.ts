@@ -5,7 +5,6 @@ import { after } from "next/server";
 import {
   createAppointment,
   createMessage,
-  createRequest,
   findAppointmentForTracking,
   findRequestForTracking,
   getArbitratorById,
@@ -17,18 +16,13 @@ import { ROUTES } from "@/lib/config/routes";
 import { resolveConsultationType } from "@/lib/config/labels";
 import { verifyCsrfFromForm } from "@/lib/security/csrf";
 import {
-  MAX_FILES_PER_REQUEST,
-  storeUploads,
-} from "@/lib/security/upload";
-import {
   RATE_LIMITS,
   limitByIp,
   rateLimitMessage,
 } from "@/lib/security/rate-limit";
-import { newBookingCode, newTrackingCode } from "@/lib/utils/id";
+import { newBookingCode } from "@/lib/utils/id";
 import {
   appointmentSchema,
-  consultationSchema,
   contactSchema,
   newsletterSchema,
   toFieldErrors,
@@ -36,16 +30,12 @@ import {
 } from "@/lib/validation/schemas";
 import { isSlotSelectable } from "@/lib/services/scheduling";
 import { phoneVerificationRequired } from "@/lib/sms/constants";
-import { verifyProof } from "@/lib/sms/otp";
-import {
-  notifyStaffOfAppointment,
-  notifyStaffOfRequest,
-} from "@/lib/sms/service";
+import { verifyProof, type OtpPurpose } from "@/lib/sms/otp";
+import { notifyStaffOfAppointment } from "@/lib/sms/service";
 import {
   errorState,
   successState,
   type AppointmentReceipt,
-  type ConsultationReceipt,
   type FormState,
   type TrackingResult,
 } from "./types";
@@ -87,119 +77,11 @@ const UNVERIFIED_PHONE_ERROR =
 async function phoneIsVerified(
   formData: FormData,
   phone: string,
-  purpose: "consultation" | "appointment",
+  purpose: OtpPurpose,
 ): Promise<boolean> {
   const settings = await getSettings();
   if (!phoneVerificationRequired(settings.sms)) return true;
   return verifyProof(formData.get("phoneProof"), phone, purpose);
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Consultation / arbitration request                                        */
-/* -------------------------------------------------------------------------- */
-
-export async function submitConsultationRequest(
-  _prev: FormState<ConsultationReceipt>,
-  formData: FormData,
-): Promise<FormState<ConsultationReceipt>> {
-  if (!(await verifyCsrfFromForm(formData))) {
-    return errorState(CSRF_ERROR);
-  }
-
-  const limit = await limitByIp(
-    "consultation",
-    RATE_LIMITS.consultation.limit,
-    RATE_LIMITS.consultation.windowMs,
-  );
-  if (!limit.allowed) return errorState(rateLimitMessage(limit.retryAfter));
-
-  const parsed = consultationSchema.safeParse({
-    fullName: formData.get("fullName"),
-    phone: formData.get("phone"),
-    email: formData.get("email"),
-    requestType: formData.get("requestType"),
-    legalArea: formData.get("legalArea"),
-    subject: formData.get("subject"),
-    description: formData.get("description"),
-    preferredContact: formData.get("preferredContact"),
-    preferredWindow: formData.get("preferredWindow"),
-    consent: formData.get("consent"),
-  });
-
-  if (!parsed.success) {
-    return errorState(VALIDATION_ERROR, toFieldErrors(parsed.error));
-  }
-
-  if (!(await phoneIsVerified(formData, parsed.data.phone, "consultation"))) {
-    return errorState(UNVERIFIED_PHONE_ERROR, {
-      phone: [UNVERIFIED_PHONE_ERROR],
-    });
-  }
-
-  // Attachments are validated (type, magic bytes, size) before being written
-  // outside the public directory.
-  const files = formData
-    .getAll("attachments")
-    .filter((entry): entry is File => entry instanceof File);
-
-  if (files.length > MAX_FILES_PER_REQUEST) {
-    return errorState(VALIDATION_ERROR, {
-      attachments: [`حداکثر ${MAX_FILES_PER_REQUEST} فایل قابل بارگذاری است.`],
-    });
-  }
-
-  const upload = await storeUploads(files);
-  if (!upload.ok) {
-    return errorState(VALIDATION_ERROR, { attachments: [upload.error.message] });
-  }
-
-  try {
-    const now = new Date().toISOString();
-    const record = await createRequest({
-      trackingCode: newTrackingCode(),
-      fullName: parsed.data.fullName,
-      phone: parsed.data.phone,
-      email: parsed.data.email,
-      requestType: parsed.data.requestType,
-      legalArea: parsed.data.legalArea,
-      subject: parsed.data.subject,
-      description: parsed.data.description,
-      preferredContact: parsed.data.preferredContact,
-      preferredWindow: parsed.data.preferredWindow,
-      attachments: upload.attachments,
-      status: "submitted",
-      consentAccepted: true,
-      phoneVerified: true,
-      timeline: [{ status: "submitted", at: now }],
-      notes: [],
-    });
-
-    /**
-     * The office alert runs after the response is flushed.
-     *
-     * The visitor's receipt must not wait on a third-party SMS gateway, and a
-     * provider outage must never turn a successfully stored request into an
-     * error on the public form.
-     */
-    after(() => notifyStaffOfRequest(record));
-
-    revalidatePath(ROUTES.admin.requests);
-    revalidatePath(ROUTES.admin.root);
-
-    return successState<ConsultationReceipt>(
-      "درخواست شما با موفقیت ثبت شد.",
-      {
-        trackingCode: record.trackingCode,
-        createdAt: record.createdAt,
-        requestType: record.requestType,
-        status: record.status,
-        attachmentCount: record.attachments.length,
-      },
-    );
-  } catch (error) {
-    console.error("[action] consultation failed", error);
-    return errorState(GENERIC_ERROR);
-  }
 }
 
 /* -------------------------------------------------------------------------- */

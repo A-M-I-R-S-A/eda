@@ -87,7 +87,7 @@ const HOME = page({
         primaryButtonText: "رزرو وقت مشاوره",
         primaryButtonUrl: "/appointment",
         secondaryButtonText: "درخواست داوری",
-        secondaryButtonUrl: "/consultation",
+        secondaryButtonUrl: "/contact",
         layout: "split",
         assurances: [
           { icon: "lock", label: "محرمانگی کامل پرونده", enabled: true },
@@ -150,17 +150,6 @@ const HOME = page({
       ],
     }, { background: "muted" }),
 
-    section("services", "خدمات", {
-      eyebrow: "خدمات تخصصی",
-      heading: "آنچه در دادآور انجام می‌شود",
-      description:
-        "هر خدمت با شرح مراحل، مستندات لازم و پرسش‌های متداول همان حوزه ارائه می‌شود.",
-      limit: 6,
-      columns: "3",
-      linkText: "همه خدمات",
-      linkUrl: "/services",
-    }),
-
     section("cards", "مسیرهای حل اختلاف", {
       eyebrow: "داوری و حل اختلاف",
       heading: "مسیرهای پایان دادن به یک اختلاف",
@@ -173,8 +162,6 @@ const HOME = page({
           description:
             "رسیدگی و صدور رأی لازم‌الاجرا بر پایه شرط داوری قرارداد یا موافقت‌نامه مستقل، در چارچوب مقررات داوری ایران.",
           icon: "scale-minimal",
-          linkText: "مشاهده جزئیات",
-          linkUrl: "/services/arbitration",
           enabled: true,
         },
         {
@@ -182,8 +169,6 @@ const HOME = page({
           description:
             "ارزیابی ماهیت اختلاف و تعیین اینکه موضوع از کدام مسیر — مذاکره، میانجی‌گری یا داوری — بهتر حل می‌شود.",
           icon: "layers",
-          linkText: "مشاهده جزئیات",
-          linkUrl: "/services/dispute-resolution",
           enabled: true,
         },
         {
@@ -191,8 +176,6 @@ const HOME = page({
           description:
             "رسیدن به توافق با کمک میانجی بی‌طرف، بدون صدور رأی الزام‌آور و با حفظ رابطه تجاری طرفین.",
           icon: "handshake",
-          linkText: "مشاهده جزئیات",
-          linkUrl: "/services/mediation",
           enabled: true,
         },
         {
@@ -207,8 +190,6 @@ const HOME = page({
           description:
             "بررسی موضوع و اسناد، تعیین مرجع صالح و ارائه گزینه‌های پیش رو همراه با الزامات هر مسیر.",
           icon: "briefcase",
-          linkText: "مشاهده جزئیات",
-          linkUrl: "/services/legal-advisory",
           enabled: true,
         },
         {
@@ -216,8 +197,6 @@ const HOME = page({
           description:
             "نگارش و بازبینی قرارداد با تمرکز بر شفافیت تعهدات، مدیریت ریسک و طراحی شرط حل اختلاف.",
           icon: "document",
-          linkText: "مشاهده جزئیات",
-          linkUrl: "/services/contract-drafting",
           enabled: true,
         },
       ],
@@ -229,7 +208,7 @@ const HOME = page({
       description:
         "هفت گام روشن که پیش از شروع رسیدگی برای هر دو طرف اعلام می‌شود.",
       items: [
-        { marker: "۰۱", title: "ثبت درخواست", description: "تکمیل فرم درخواست داوری همراه با قرارداد حاوی شرط داوری و مستندات کلیدی.", enabled: true },
+        { marker: "۰۱", title: "ثبت درخواست", description: "تماس با مؤسسه و ارائه قرارداد حاوی شرط داوری همراه با مستندات کلیدی.", enabled: true },
         { marker: "۰۲", title: "بررسی اولیه", description: "احراز صلاحیت مرجع داوری، بررسی اعتبار شرط داوری و قابلیت ارجاع موضوع.", enabled: true },
         { marker: "۰۳", title: "تعیین فرآیند رسیدگی", description: "توافق بر آیین رسیدگی، زبان، مهلت‌ها و تنظیم تقویم دادرسی با حضور طرفین.", enabled: true },
         { marker: "۰۴", title: "تعیین یا انتخاب داور", description: "پذیرش سمت از سوی داور و امضای اظهارنامه استقلال و بی‌طرفی.", enabled: true },
@@ -277,7 +256,7 @@ const HOME = page({
       primaryButtonText: "رزرو وقت مشاوره",
       primaryButtonUrl: "/appointment",
       secondaryButtonText: "ثبت درخواست",
-      secondaryButtonUrl: "/consultation",
+      secondaryButtonUrl: "/contact",
     }, { background: "navy" }),
   ],
 });
@@ -352,7 +331,7 @@ const ABOUT = page({
       primaryButtonText: "رزرو وقت مشاوره",
       primaryButtonUrl: "/appointment",
       secondaryButtonText: "ثبت درخواست",
-      secondaryButtonUrl: "/consultation",
+      secondaryButtonUrl: "/contact",
     }, { background: "navy" }),
   ],
 });
@@ -384,7 +363,7 @@ const ARBITRATION = page({
       description:
         "داوری، رسیدگی را از یک فرآیند چندمرحله‌ای و علنی به رسیدگی‌ای متمرکز، تخصصی و محرمانه تبدیل می‌کند؛ با رأیی که مانند حکم دادگاه لازم‌الاجراست.",
       primaryButtonText: "ثبت درخواست داوری",
-      primaryButtonUrl: "/consultation",
+      primaryButtonUrl: "/contact",
       secondaryButtonText: "مشاوره پیش از ثبت",
       secondaryButtonUrl: "/appointment",
       layout: "minimal",
@@ -403,7 +382,7 @@ const ARBITRATION = page({
       eyebrow: "فرآیند رسیدگی",
       heading: "از ثبت درخواست تا صدور رأی",
       items: [
-        { marker: "۰۱", title: "ثبت درخواست", description: "تکمیل فرم درخواست داوری همراه با قرارداد حاوی شرط داوری و مستندات کلیدی.", enabled: true },
+        { marker: "۰۱", title: "ثبت درخواست", description: "تماس با مؤسسه و ارائه قرارداد حاوی شرط داوری همراه با مستندات کلیدی.", enabled: true },
         { marker: "۰۲", title: "بررسی اولیه", description: "احراز صلاحیت مرجع داوری، بررسی اعتبار شرط داوری و قابلیت ارجاع موضوع.", enabled: true },
         { marker: "۰۳", title: "تعیین فرآیند رسیدگی", description: "توافق بر آیین رسیدگی، زبان، مهلت‌ها و تنظیم تقویم دادرسی با حضور طرفین.", enabled: true },
         { marker: "۰۴", title: "تعیین یا انتخاب داور", description: "پذیرش سمت از سوی داور و امضای اظهارنامه استقلال و بی‌طرفی.", enabled: true },
@@ -451,7 +430,7 @@ const ARBITRATION = page({
       description:
         "قرارداد حاوی شرط داوری و مستندات کلیدی را بارگذاری کنید؛ پس از بررسی مقدماتی صلاحیت، مراحل بعدی به شما اعلام می‌شود.",
       primaryButtonText: "ثبت درخواست",
-      primaryButtonUrl: "/consultation",
+      primaryButtonUrl: "/contact",
       secondaryButtonText: "رزرو وقت مشاوره",
       secondaryButtonUrl: "/appointment",
     }, { background: "navy" }),
@@ -575,19 +554,6 @@ function systemPage(input: {
 
 const SYSTEM_PAGES: Page[] = [
   systemPage({
-    id: "page-services",
-    slug: "services",
-    title: "خدمات",
-    eyebrow: "خدمات تخصصی",
-    heading: "خدمات حقوقی و داوری مؤسسه",
-    lead: "هر خدمت با شرح مراحل، مستندات لازم و پرسش‌های متداول همان حوزه ارائه می‌شود.",
-    note: "فهرست خدمات به‌صورت خودکار از بخش «خدمات» خوانده می‌شود. عنوان، توضیح و سئوی این صفحه از همین‌جا ویرایش می‌شود.",
-    order: 3,
-    metaTitle: "خدمات حقوقی و داوری",
-    metaDescription:
-      "خدمات مؤسسه داوری دادآور: داوری، رسیدگی به اختلافات، میانجی‌گری، مشاوره حقوقی و تنظیم و بررسی قراردادهای تجاری.",
-  }),
-  systemPage({
     id: "page-arbitrator",
     slug: "arbitrator",
     title: "درباره داور",
@@ -638,19 +604,6 @@ const SYSTEM_PAGES: Page[] = [
     metaTitle: "تماس با ما",
     metaDescription:
       "اطلاعات تماس مؤسسه داوری دادآور؛ نشانی، شماره تماس، ایمیل، ساعات کاری و فرم ارسال پیام.",
-  }),
-  systemPage({
-    id: "page-consultation",
-    slug: "consultation",
-    title: "درخواست مشاوره",
-    eyebrow: "ثبت درخواست",
-    heading: "درخواست مشاوره یا داوری",
-    lead: "شرح موضوع و مستندات خود را ثبت کنید؛ پس از بررسی مقدماتی، کد پیگیری و مراحل بعدی به شما اعلام می‌شود.",
-    note: "این صفحه فرم چندمرحله‌ای ثبت درخواست را اجرا می‌کند. درخواست‌های ثبت‌شده در بخش «درخواست‌ها» دیده می‌شوند.",
-    order: 8,
-    metaTitle: "ثبت درخواست مشاوره و داوری",
-    metaDescription:
-      "ثبت آنلاین درخواست مشاوره حقوقی، داوری یا میانجی‌گری همراه با بارگذاری مدارک و دریافت کد پیگیری.",
   }),
   systemPage({
     id: "page-appointment",

@@ -11,25 +11,21 @@ import {
   createArbitrator,
   createArticle,
   createFaq,
-  createService,
   createUser,
   deleteArbitrator,
   deleteArticle,
   deleteFaq,
   deleteMessage,
-  deleteService,
   deleteUser,
   findUserByEmail,
   getArbitratorById,
   getArticleById,
   getFaqById,
   getMessageById,
-  getServiceById,
   getUserById,
   listArbitrators,
   listArticles,
   listCategories,
-  listServices,
   recordRevision,
   rescheduleAppointment,
   setAppointmentStatus,
@@ -38,7 +34,6 @@ import {
   updateArbitrator,
   updateArticle,
   updateFaq,
-  updateService,
   updateSettings,
   updateUser,
 } from "@/lib/db";
@@ -58,7 +53,6 @@ import {
   noteSchema,
   requestStatusEnum,
   rescheduleSchema,
-  serviceFormSchema,
   settingsFormSchema,
   statusChangeSchema,
   toFieldErrors,
@@ -710,150 +704,6 @@ export async function deleteArbitratorAction(
     return successState("پروفایل حذف شد.");
   } catch (error) {
     console.error("[admin] delete arbitrator failed", error);
-    return errorState(MESSAGES.generic);
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Services                                                                  */
-/* -------------------------------------------------------------------------- */
-
-export async function saveServiceAction(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const gate = await guard(formData, "content");
-  if (!gate.ok) return gate.state;
-
-  const id = text(formData, "id");
-
-  const parsed = serviceFormSchema.safeParse({
-    title: formData.get("title"),
-    slug: formData.get("slug"),
-    shortDescription: formData.get("shortDescription"),
-    body: formData.get("body"),
-    category: formData.get("category"),
-    icon: formData.get("icon"),
-    highlights: lines(formData, "highlights"),
-    image: formData.get("image"),
-    ctaLabel: formData.get("ctaLabel"),
-    ctaHref: formData.get("ctaHref"),
-    order: formData.get("order"),
-    status: formData.get("status"),
-    scheduledFor: formData.get("scheduledFor"),
-    seo: {
-      metaTitle: formData.get("metaTitle"),
-      metaDescription: formData.get("metaDescription"),
-      canonicalPath: formData.get("canonicalPath"),
-      ogTitle: formData.get("ogTitle"),
-      ogDescription: formData.get("ogDescription"),
-      ogImage: formData.get("ogImage"),
-      noindex: bool(formData, "noindex"),
-      nofollow: bool(formData, "nofollow"),
-    },
-  });
-
-  if (!parsed.success) {
-    return errorState(MESSAGES.validation, toFieldErrors(parsed.error));
-  }
-
-  try {
-    const existing = await listServices();
-    const taken = existing.filter((s) => s.id !== id).map((s) => s.slug);
-    const slug = uniqueSlug(parsed.data.slug, taken);
-    const current = id ? await getServiceById(id) : null;
-
-    const payload = {
-      ...parsed.data,
-      slug,
-      icon: parsed.data.icon as never,
-      image: parsed.data.image || undefined,
-      ctaLabel: parsed.data.ctaLabel || undefined,
-      ctaHref: parsed.data.ctaHref || undefined,
-      // Step lists, linked FAQs and related services are edited elsewhere;
-      // preserving them here stops this form from wiping them.
-      process: current?.process ?? [],
-      faqIds: current?.faqIds ?? [],
-      relatedSlugs: current?.relatedSlugs ?? [],
-      ...resolvePublication(
-        {
-          status: parsed.data.status,
-          scheduledFor: parsed.data.scheduledFor || undefined,
-        },
-        current ?? undefined,
-      ),
-    };
-
-    if (id) {
-      if (!current) return errorState("خدمت مورد نظر یافت نشد.");
-
-      await recordRevision({
-        entity: "service",
-        entityId: current.id,
-        label: current.title,
-        authorId: gate.session.sub,
-        authorName: gate.session.name,
-        snapshot: current,
-      });
-
-      const updated = await updateService(id, payload);
-      if (!updated) return errorState("خدمت مورد نظر یافت نشد.");
-
-      await audit(gate.session, {
-        action: current.status !== parsed.data.status ? "publish" : "update",
-        entity: "service",
-        entityId: id,
-        entityLabel: updated.title,
-      });
-    } else {
-      const created = await createService(payload);
-      await audit(gate.session, {
-        action: "create",
-        entity: "service",
-        entityId: created.id,
-        entityLabel: created.title,
-      });
-    }
-
-    revalidatePath(ROUTES.admin.services);
-    revalidatePath(ROUTES.services);
-    revalidatePath(ROUTES.service(slug));
-    revalidatePath("/");
-
-    return successState(id ? "خدمت به‌روزرسانی شد." : "خدمت جدید ثبت شد.");
-  } catch (error) {
-    console.error("[admin] save service failed", error);
-    return errorState(MESSAGES.generic);
-  }
-}
-
-export async function deleteServiceAction(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const gate = await guard(formData, "content");
-  if (!gate.ok) return gate.state;
-
-  const id = text(formData, "id");
-  if (!id) return errorState(MESSAGES.invalid);
-
-  try {
-    const service = await getServiceById(id);
-    const removed = await deleteService(id);
-    if (!removed) return errorState("خدمت مورد نظر یافت نشد.");
-
-    await audit(gate.session, {
-      action: "delete",
-      entity: "service",
-      entityId: id,
-      entityLabel: service?.title ?? "خدمت",
-    });
-
-    revalidatePath(ROUTES.admin.services);
-    revalidatePath(ROUTES.services);
-    return successState("خدمت حذف شد.");
-  } catch (error) {
-    console.error("[admin] delete service failed", error);
     return errorState(MESSAGES.generic);
   }
 }

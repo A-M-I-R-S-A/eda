@@ -131,10 +131,19 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: false,
   },
   /**
-   * The institution has a single arbitrator, so the plural `/arbitrators`
-   * directory was replaced by the singular `/arbitrator` profile. Anything
-   * already pointing at the old paths — a bookmark, an inbound link, an
-   * indexed URL — is sent to the profile permanently rather than 404ing.
+   * Permanent homes for routes that were retired.
+   *
+   * A bookmark, an inbound link or an indexed URL keeps working instead of
+   * 404ing, and search engines transfer the old URL's standing to the new one.
+   *
+   *   • `/arbitrators` — the institution has a single arbitrator, so the plural
+   *     directory was replaced by the singular `/arbitrator` profile.
+   *   • `/consultation` — the online request form was withdrawn; enquiries now
+   *     go through the contact page.
+   *
+   * `/services` is deliberately absent: those pages had per-service URLs with
+   * no successor, and folding a specific page into a generic one is worse for
+   * a visitor than an honest 404.
    */
   async redirects() {
     return [
@@ -144,6 +153,7 @@ const nextConfig: NextConfig = {
         destination: "/arbitrator/:slug",
         permanent: true,
       },
+      { source: "/consultation", destination: "/contact", permanent: true },
     ];
   },
   async headers() {

@@ -58,9 +58,12 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `SEED_DEMO_DATA`          | Also seed sample enquiries for evaluation             | `false`          |
 | `UPLOAD_DIR`              | Case attachments (**absolute, outside the deploy**)   | `.uploads`       |
 | `MEDIA_DIR`               | Media library files (**absolute, outside the deploy**)| `.data/media`    |
-| `SMSIR_API_KEY`           | sms.ir API key — SMS is inert without it              | —                |
-| `SMSIR_LINE_NUMBER`       | Sending line for notifications                        | —                |
-| `SMSIR_OTP_TEMPLATE_ID`   | Registered sms.ir verification template               | —                |
+| `SMSIR_API_KEY`           | sms.ir API key — *fallback*, see **Settings › SMS**   | —                |
+| `SMSIR_LINE_NUMBER`       | Sending line — *fallback*                             | —                |
+| `SMSIR_OTP_TEMPLATE_ID`   | Verification template — *fallback*                    | —                |
+
+The `SMSIR_*` variables are an optional fallback. The whole sms.ir configuration is edited
+at **Settings › SMS** and stored in the database; a value set there wins over the variable.
 
 `NEXT_PUBLIC_SITE_URL` is **inlined at build time**. It must be set when `npm run build`
 runs, not only when the server starts — otherwise every canonical URL, sitemap entry and
@@ -99,10 +102,8 @@ npm run typecheck  # tsc --noEmit
 
 | Route                  | Page                                                        |
 | ---------------------- | ----------------------------------------------------------- |
-| `/`                    | Home — hero, credibility, about, services, arbitration, team, articles, FAQ |
+| `/`                    | Home — hero, credibility, about, arbitration, team, articles, FAQ |
 | `/about`               | About the institution — mission, principles, history, team    |
-| `/services`            | Service catalogue grouped by category                         |
-| `/services/[slug]`     | Individual service — body, process, highlights, related FAQ   |
 | `/arbitration`         | Arbitration hub — six modalities, 7-step process, comparison, legal basis |
 | `/arbitrators`         | Arbitrator / legal-team directory                             |
 | `/arbitrators/[slug]`  | Individual profile — biography, education, background         |
@@ -110,17 +111,22 @@ npm run typecheck  # tsc --noEmit
 | `/articles/[slug]`     | Article — editorial typography + table of contents            |
 | `/faq`                 | FAQ grouped by topic with jump navigation                     |
 | `/contact`             | Contact details, hours, map, contact form                     |
-| `/consultation`        | Consultation / arbitration request + document upload          |
 | `/appointment`         | 7-step appointment booking wizard                             |
 | `/tracking`            | Request & booking status lookup                               |
 | `/privacy`, `/terms`   | Legal documents                                               |
 
 Plus `/sitemap.xml`, `/robots.txt`, `/icon.svg` and generated `opengraph-image` routes.
 
+`/consultation` — the online request form — was withdrawn and now redirects permanently to
+`/contact`. The requests it produced are still in the database, still readable at
+`/admin/requests` and still traceable at `/tracking`; nothing new can arrive. The services
+catalogue was removed outright: those URLs had no successor, so they 404 rather than being
+folded into an unrelated page.
+
 ### Admin (`noindex`, session-gated)
 
 `/admin` overview · `appointments` · `requests` · `messages` · `users` ·
-`arbitrators` · `services` · `articles` · `faq` · `settings`, each with new/edit
+`arbitrators` · `articles` · `faq` · `settings`, each with new/edit
 sub-routes where relevant.
 
 ---
@@ -141,9 +147,9 @@ src/
 │   ├── ui/                design-system primitives (button, field, badge, states…)
 │   ├── brand/             monogram, hero geometry, portrait plates
 │   ├── layout/            site header, footer, page hero
-│   ├── cards/             service, article, arbitrator cards
+│   ├── cards/             article and arbitrator cards
 │   ├── sections/          reusable page sections
-│   ├── forms/             consultation, contact, tracking, booking wizard
+│   ├── forms/             contact, tracking, booking wizard
 │   ├── admin/             admin shell, tables, charts, CMS forms
 │   └── tracking/          public status timeline
 ├── lib/
@@ -157,7 +163,7 @@ src/
 │   ├── config/            routes, navigation, Persian label dictionaries
 │   ├── seo/               metadata factory, JSON-LD, OG image renderer
 │   └── utils/             Persian numerals, Jalali calendar, ids, slugs
-├── data/                  seed content (services, arbitrators, articles, FAQ…)
+├── data/                  seed content (arbitrators, articles, FAQ…)
 ├── types/                 domain models
 └── proxy.ts               edge gate for /admin
 ```
@@ -228,6 +234,39 @@ start the tables are created and the administrator account is seeded.
 **4. Check it came up.** `/api/health` returns `{"status":"ok","database":true}` and 200,
 or 503 when the database is unreachable — point the host's health check at it.
 
+### Upgrading a live database
+
+The schema version is stored in `db_meta`. On boot, a snapshot older than `DB_VERSION` is
+migrated in place and written back — content is never re-seeded over.
+
+**`DB_VERSION` 5 removes records**, which no earlier step did: the services module and the
+two system pages behind `/services` and `/consultation`. It also rewrites navigation entries
+and section links that pointed at them. Everything else — pages, articles, FAQ, media,
+submissions, users, settings — carries across untouched.
+
+Because it deletes, two things follow that did not apply to earlier upgrades:
+
+- **Do not run the old and new builds against the same database at the same time.**
+  `migrate()` refuses a snapshot *newer* than the build's own `DB_VERSION` and re-seeds
+  instead, so a version-4 process booting against a version-5 database would overwrite the
+  settings row with defaults — losing the navigation, branding and SMS configuration. Stop
+  the old process, then start the new one. A rolling or blue/green deployment that overlaps
+  the two is not safe here.
+- **Rolling back the code does not roll back the data.** The same refusal applies, so
+  redeploying the previous build against a migrated database has the same effect. Take
+  `mysqldump dadavar > backup.sql` **before** the first start of the new build; that dump is
+  the only way back.
+
+The migration is idempotent and runs inside the global write lock, so a restart part-way
+through is safe and two processes cannot both apply it.
+
+The `services` table is deliberately **not dropped** — nothing reads it any more, but the
+rows are still there if the catalogue is ever wanted back:
+
+```sql
+SELECT COUNT(*) FROM services;   -- still intact after the upgrade
+```
+
 ### Notes for the host
 
 - **Run one process** unless you have reason not to. Multiple processes are safe (writes
@@ -244,24 +283,34 @@ or 503 when the database is unreachable — point the host's health check at it.
 
 Three flows, deliberately shaped differently:
 
-| Flow | Trigger | Route |
-| ---- | ------- | ----- |
-| Phone verification | Visitor requests a code on a public form | `/send/verify` (registered template) |
-| Client notification | **Staff press send** on a request or appointment | `/send/bulk` |
-| Office alert | Automatic, when a new enquiry or booking arrives | `/send/bulk` |
+| Flow | Trigger | Template |
+| ---- | ------- | -------- |
+| Phone verification | Visitor requests a code while booking | `otpTemplateId` |
+| Office alert | Automatic, when a booking arrives | `staffTemplateId` |
+| Client notification | **Staff press send** on a request or appointment | `updateTemplateId` |
 
-Credentials live in the environment, never in the admin panel — an editor with access to
-settings must not be able to read the account's API key. Behaviour and message wording are
-configured at **Settings › SMS** (`advanced` capability, i.e. the super administrator).
+All three go through `/send/verify`, sms.ir's template route. Under Iranian regulation a
+transactional message is sent by naming a template registered and approved in the sms.ir
+panel; the API supplies only parameter *values*. **Message wording therefore cannot be
+edited in this application** — it lives at the provider. A composer here would promise an
+ability the account does not have, and every send would be refused.
+
+What *is* editable, at **Settings › SMS** (`advanced` capability, i.e. the super
+administrator): the API key, the line number, and for each flow the template id and the
+names of its parameters. The stored key is never sent to the browser — the field is blank,
+and blank means "leave it as it is"; clearing it is a separate, explicit tick. The screen
+proves the configuration works by reading the account credit back from the provider.
+
+Any field left empty falls back to its `SMSIR_*` environment variable, so an installation
+configured before this screen existed keeps sending without being re-entered.
 
 The client notification is not a side effect of changing a status, and that is on purpose:
-the wording of a message about somebody's legal matter should be read by the person sending
-it, and not every status change warrants a text. The composer prefills from the template for
-the current status and stays editable; the recipient is read from the stored record, never
-from the form.
+not every status change warrants a text, and some warrant a phone call. Both the recipient
+and the code come from the stored record, never from the form, so nothing in the admin UI
+can redirect a case notification to another number.
 
-Nothing sends until `SMSIR_API_KEY` is set *and* SMS is enabled in settings. Phone
-verification only applies when both switches are on — otherwise the public forms would ask
+Nothing sends until an API key resolves *and* SMS is enabled in settings. Phone
+verification only applies when both switches are on — otherwise the booking form would ask
 for a code that can never arrive. Every attempt is logged, successful or not; one-time codes
 are stored hashed and never written to the log.
 

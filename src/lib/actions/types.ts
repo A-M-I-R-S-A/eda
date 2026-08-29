@@ -36,14 +36,6 @@ export function successState<T>(message: string, payload?: T): FormState<T> {
 /*  Payload shapes                                                            */
 /* -------------------------------------------------------------------------- */
 
-export interface ConsultationReceipt {
-  trackingCode: string;
-  createdAt: string;
-  requestType: ConsultationRequest["requestType"];
-  status: ConsultationRequest["status"];
-  attachmentCount: number;
-}
-
 export interface AppointmentReceipt {
   bookingCode: string;
   date: string;

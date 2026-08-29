@@ -15,7 +15,7 @@ import { ConfirmDialog, Modal, Toast } from "./dialog";
 import { useActionResult } from "./use-action-result";
 
 /**
- * Version history for articles and services.
+ * Version history for pages and articles.
  *
  * Deliberately field-level rather than character-level: what an administrator
  * needs before restoring is "which fields moved", so they can judge whether
@@ -305,16 +305,5 @@ export const ARTICLE_REVISION_FIELDS: RevisionField[] = [
   { key: "coverImage", label: "تصویر شاخص" },
   { key: "tags", label: "برچسب‌ها", format: listFormat },
   { key: "featured", label: "مقاله ویژه" },
-  { key: "status", label: "وضعیت انتشار" },
-];
-
-export const SERVICE_REVISION_FIELDS: RevisionField[] = [
-  { key: "title", label: "عنوان" },
-  { key: "shortDescription", label: "توضیح کوتاه" },
-  { key: "body", label: "متن کامل" },
-  { key: "category", label: "دسته‌بندی" },
-  { key: "icon", label: "آیکون" },
-  { key: "highlights", label: "نکات کلیدی", format: listFormat },
-  { key: "image", label: "تصویر" },
   { key: "status", label: "وضعیت انتشار" },
 ];

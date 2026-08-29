@@ -90,7 +90,19 @@ async function snapshotGroup(
           socials: settings.socials,
           notaryOffice: settings.notaryOffice,
         }
-      : settings[group];
+      : group === "sms"
+        ? /**
+           * The provider key is deliberately not snapshotted.
+           *
+           * Version history is readable by anyone with the `settings`
+           * capability and renders each snapshot verbatim, while the SMS
+           * screen itself is behind `advanced` precisely so that the account
+           * key is not readable there. Keeping the key out of the snapshot is
+           * what stops history from being the way around that gate — and it
+           * means a restore cannot silently reinstate a key that was replaced.
+           */
+          { ...settings.sms, apiKey: "" }
+        : settings[group];
 
   await recordRevision({
     entity: "settings",
@@ -285,7 +297,6 @@ export async function saveFooterAction(
     copyright: formData.get("copyright"),
     showContactBlock: bool(formData, "showContactBlock"),
     showSocials: bool(formData, "showSocials"),
-    showServiceLinks: bool(formData, "showServiceLinks"),
     showAdminLink: bool(formData, "showAdminLink"),
     showNewsletter: bool(formData, "showNewsletter"),
     newsletterTitle: formData.get("newsletterTitle"),
@@ -626,8 +637,12 @@ export async function saveSmsSettingsAction(
   const parsed = smsSettingsFormSchema.safeParse({
     enabled: bool(formData, "enabled"),
     requirePhoneVerification: bool(formData, "requirePhoneVerification"),
+    apiKey: text(formData, "apiKey"),
+    clearApiKey: bool(formData, "clearApiKey"),
+    lineNumber: text(formData, "lineNumber"),
+    otpTemplateId: text(formData, "otpTemplateId"),
+    otpCodeParam: text(formData, "otpCodeParam"),
     staffRecipients: text(formData, "staffRecipients"),
-    notifyStaffOnRequest: bool(formData, "notifyStaffOnRequest"),
     notifyStaffOnAppointment: bool(formData, "notifyStaffOnAppointment"),
     staffTemplateId: text(formData, "staffTemplateId"),
     staffNameParam: text(formData, "staffNameParam"),
@@ -640,15 +655,38 @@ export async function saveSmsSettingsAction(
     return errorState(MESSAGES.validation, toFieldErrors(parsed.error));
   }
 
+  /**
+   * The stored key is never sent to the browser, so the field always arrives
+   * empty unless somebody typed a new one. Empty therefore means "leave it
+   * alone" — otherwise every save of an unrelated toggle would wipe the
+   * account key — and erasing it is an explicit tick of its own.
+   */
+  const { clearApiKey, ...values } = parsed.data;
+  const patch = { ...values };
+  if (clearApiKey) {
+    patch.apiKey = "";
+  } else if (!patch.apiKey) {
+    delete (patch as Partial<typeof patch>).apiKey;
+  }
+
   try {
     await snapshotGroup(gate.session, "sms", "تنظیمات پیامک");
-    await updateSmsSettings(parsed.data);
+    await updateSmsSettings(patch);
 
     await audit(gate.session, {
       action: "update",
       entity: "settings",
       entityLabel: "تنظیمات پیامک",
-      detail: parsed.data.enabled ? "ارسال پیامک فعال" : "ارسال پیامک غیرفعال",
+      detail: [
+        parsed.data.enabled ? "ارسال پیامک فعال" : "ارسال پیامک غیرفعال",
+        clearApiKey
+          ? "کلید API حذف شد"
+          : patch.apiKey
+            ? "کلید API تغییر کرد"
+            : null,
+      ]
+        .filter(Boolean)
+        .join(" — "),
     });
 
     revalidateSite();

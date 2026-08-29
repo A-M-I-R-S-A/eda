@@ -446,12 +446,6 @@ export function FooterForm({
             defaultChecked={footer.showContactBlock}
           />
           <ToggleField
-            name="showServiceLinks"
-            label="نمایش ستون خدمات"
-            description="فهرست خدمات فعال به‌صورت خودکار."
-            defaultChecked={footer.showServiceLinks}
-          />
-          <ToggleField
             name="showSocials"
             label="نمایش شبکه‌های اجتماعی"
             defaultChecked={footer.showSocials}

@@ -80,50 +80,6 @@ export interface SessionPayload {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Services                                                                  */
-/* -------------------------------------------------------------------------- */
-
-export type ServiceCategory = "arbitration" | "advisory" | "dispute-resolution";
-
-export interface Service extends Timestamped {
-  id: ID;
-  slug: string;
-  title: string;
-  shortDescription: string;
-  /** Markdown-lite body rendered by `renderRichText`. */
-  body: string;
-  category: ServiceCategory;
-  icon: ServiceIconName;
-  highlights: string[];
-  process: { title: string; description: string }[];
-  faqIds: ID[];
-  relatedSlugs: string[];
-  /** Optional hero/card image chosen from the media library. */
-  image?: string;
-  /** Call-to-action rendered at the foot of the service page. */
-  ctaLabel?: string;
-  ctaHref?: string;
-  order: number;
-  status: ContentStatus;
-  /** Go-live moment when `status` is `scheduled`. */
-  scheduledFor?: ISODate;
-  seo: SeoFields;
-}
-
-export type ServiceIconName =
-  | "gavel-free-balance"
-  | "handshake"
-  | "globe"
-  | "bridge"
-  | "document"
-  | "shield"
-  | "briefcase"
-  | "columns"
-  | "compass"
-  | "layers"
-  | "scale-minimal";
-
-/* -------------------------------------------------------------------------- */
 /*  Arbitrators / legal team                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -471,11 +427,32 @@ export interface SmsSettings {
   /** Require a verified phone number before a public form can be submitted. */
   requirePhoneVerification: boolean;
 
-  /* -- staff alert: new submission ---------------------------------------- */
+  /* -- provider account ---------------------------------------------------- */
 
-  /** People alerted when an enquiry or booking arrives. */
+  /**
+   * sms.ir API key.
+   *
+   * Empty means "fall back to `SMSIR_API_KEY`", so a deployment that has
+   * always configured the account through the environment keeps working
+   * untouched. Anyone who can reach this group can change what the
+   * institution's SMS credit is spent on, which is why the whole screen is
+   * behind the `advanced` capability rather than `settings`.
+   */
+  apiKey: string;
+  /** Reported on the settings screen; nothing sends from a line. */
+  lineNumber: string;
+
+  /* -- phone verification -------------------------------------------------- */
+
+  /** Registered template id for the one-time code. Empty disables sending. */
+  otpTemplateId: string;
+  /** Parameter in that template carrying the code. */
+  otpCodeParam: string;
+
+  /* -- staff alert: new booking -------------------------------------------- */
+
+  /** People alerted when a booking arrives. */
   staffRecipients: SmsStaffRecipient[];
-  notifyStaffOnRequest: boolean;
   notifyStaffOnAppointment: boolean;
   /** Registered template id for the staff alert. Empty disables it. */
   staffTemplateId: string;

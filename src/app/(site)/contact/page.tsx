@@ -54,15 +54,15 @@ export default async function ContactPage() {
         aside={
           <div className="flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
             <ButtonLink
-              href={ROUTES.consultation}
+              href={ROUTES.appointment}
               variant="primary"
               size="lg"
               iconEnd="arrow-forward"
             >
-              ثبت درخواست
+              رزرو وقت مشاوره
             </ButtonLink>
-            <ButtonLink href={ROUTES.appointment} variant="outline" size="lg">
-              رزرو وقت
+            <ButtonLink href={ROUTES.tracking} variant="outline" size="lg">
+              پیگیری درخواست
             </ButtonLink>
           </div>
         }
@@ -224,17 +224,18 @@ export default async function ContactPage() {
                       پیش از ارسال اطلاعات محرمانه
                     </h2>
                     <p className="mt-3 text-[0.8125rem] leading-[2] text-white/60">
-                      لطفاً مدارک و جزئیات پرونده را از طریق فرم درخواست مشاوره
-                      ارسال کنید؛ آن مسیر برای انتقال اسناد محرمانه طراحی شده است.
+                      این فرم برای طرح پرسش و هماهنگی اولیه است. مدارک و جزئیات
+                      پرونده را از این مسیر ارسال نکنید؛ برای بررسی اسناد، یک
+                      جلسه رزرو کنید تا موضوع مستقیماً بررسی شود.
                     </p>
                     <ButtonLink
-                      href={ROUTES.consultation}
+                      href={ROUTES.appointment}
                       variant="outline-light"
                       size="sm"
                       block
                       className="mt-5"
                     >
-                      رفتن به فرم درخواست
+                      رزرو وقت مشاوره
                     </ButtonLink>
                   </div>
                 </div>

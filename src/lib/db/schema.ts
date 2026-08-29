@@ -11,7 +11,6 @@ import type {
   NewsletterSubscriber,
   Page,
   Revision,
-  Service,
   SiteSettings,
   SmsLogEntry,
   Testimonial,
@@ -25,7 +24,7 @@ import type {
  * the snapshot cannot be brought forward — an administrator's content is not
  * something to discard over a schema change.
  */
-export const DB_VERSION = 4;
+export const DB_VERSION = 5;
 
 /**
  * The complete persisted state.
@@ -42,7 +41,6 @@ export interface Database {
   /* -- CMS content ------------------------------------------------------- */
   pages: Page[];
   media: MediaAsset[];
-  services: Service[];
   arbitrators: Arbitrator[];
   articles: Article[];
   categories: Category[];
@@ -69,7 +67,6 @@ export const COLLECTION_KEYS: CollectionKey[] = [
   "users",
   "pages",
   "media",
-  "services",
   "arbitrators",
   "articles",
   "categories",

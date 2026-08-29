@@ -195,11 +195,11 @@ export default async function AdditionalArbitratorPage({ params }: PageProps) {
                   </ButtonLink>
                 )}
                 <ButtonLink
-                  href={ROUTES.consultation}
+                  href={ROUTES.contact}
                   variant="outline-light"
                   size="lg"
                 >
-                  ثبت درخواست مشاوره
+                  تماس با مؤسسه
                 </ButtonLink>
               </div>
             </div>

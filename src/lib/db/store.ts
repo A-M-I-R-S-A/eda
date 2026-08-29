@@ -212,7 +212,7 @@ async function loadSnapshot(): Promise<{ db: Database; revision: number }> {
 
   if (schemaVersion !== DB_VERSION) {
     console.info(`[db] migrating snapshot ${schemaVersion} → ${DB_VERSION}.`);
-    const bumped = await persistMigration(db);
+    const bumped = await persistMigration(db, { prune: migrated !== null });
     return { db, revision: bumped };
   }
 
@@ -225,8 +225,27 @@ async function loadSnapshot(): Promise<{ db: Database; revision: number }> {
  * Runs inside the same write lock as any other mutation, so two processes
  * starting against an out-of-date database cannot both migrate it. Returns the
  * revision the caller should cache.
+ *
+ * `prune` decides how the snapshot meets the rows already stored:
+ *
+ *   • **true** — a migration ran and its result is authoritative, so the full
+ *     diff is written, deletions included. A step that *removes* records (the
+ *     v5 step retires the services module) is only durable this way: without
+ *     it the rows survive in SQL, the schema version says "already migrated",
+ *     and the next boot serves the deleted records back.
+ *
+ *   • **false** — the snapshot was unsalvageable and `db` is a fresh seed.
+ *     Only missing rows are inserted, so a database that could not be read is
+ *     given something to work with rather than being emptied on the strength
+ *     of a parse failure.
+ *
+ * The baseline for the diff is `cache.rows` / `cache.settingsJson`, which the
+ * caller sets from the pre-migration read immediately before calling this.
  */
-async function persistMigration(db: Database): Promise<number> {
+async function persistMigration(
+  db: Database,
+  { prune }: { prune: boolean },
+): Promise<number> {
   const connection = await getPool().getConnection();
 
   try {
@@ -242,28 +261,32 @@ async function persistMigration(db: Database): Promise<number> {
       return Number(rows[0]?.revision ?? 0);
     }
 
-    await connection.query(
-      "REPLACE INTO settings (id, data, updated_at) VALUES (?, ?, ?)",
-      ["site", JSON.stringify(db.settings), updatedAtOf(db.settings)],
-    );
-    cache.settingsJson = JSON.stringify(db.settings);
+    if (prune) {
+      await writeChanges(connection, db);
+    } else {
+      await connection.query(
+        "REPLACE INTO settings (id, data, updated_at) VALUES (?, ?, ?)",
+        ["site", JSON.stringify(db.settings), updatedAtOf(db.settings)],
+      );
+      cache.settingsJson = JSON.stringify(db.settings);
 
-    // A migration may backfill a collection that did not exist before.
-    for (const key of COLLECTION_KEYS) {
-      const items = (db[key] ?? []) as unknown[];
-      const known = cache.rows.get(key) ?? new Map<string, string>();
-      const missing = items.filter((item) => {
-        const id = idOf(item);
-        return id !== null && !known.has(id);
-      });
-      if (!missing.length) continue;
+      // A migration may backfill a collection that did not exist before.
+      for (const key of COLLECTION_KEYS) {
+        const items = (db[key] ?? []) as unknown[];
+        const known = cache.rows.get(key) ?? new Map<string, string>();
+        const missing = items.filter((item) => {
+          const id = idOf(item);
+          return id !== null && !known.has(id);
+        });
+        if (!missing.length) continue;
 
-      await insertRows(connection, TABLE_FOR_COLLECTION[key], missing);
-      for (const item of missing) {
-        const id = idOf(item);
-        if (id) known.set(id, JSON.stringify(item));
+        await insertRows(connection, TABLE_FOR_COLLECTION[key], missing);
+        for (const item of missing) {
+          const id = idOf(item);
+          if (id) known.set(id, JSON.stringify(item));
+        }
+        cache.rows.set(key, known);
       }
-      cache.rows.set(key, known);
     }
 
     await connection.query(
@@ -275,6 +298,12 @@ async function persistMigration(db: Database): Promise<number> {
     return Number(rows[0]?.revision ?? 0) + 1;
   } catch (error) {
     await connection.rollback().catch(() => undefined);
+    /**
+     * Both branches update the row caches as they go, so a rollback leaves
+     * them describing writes that never committed. Drop them; the next read
+     * rebuilds from what is actually stored.
+     */
+    invalidateCache();
     throw error;
   } finally {
     connection.release();

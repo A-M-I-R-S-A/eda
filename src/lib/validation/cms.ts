@@ -301,7 +301,6 @@ export const footerFormSchema = z.object({
   copyright: trimmed(300).optional().default(""),
   showContactBlock: z.coerce.boolean().default(true),
   showSocials: z.coerce.boolean().default(true),
-  showServiceLinks: z.coerce.boolean().default(true),
   showAdminLink: z.coerce.boolean().default(true),
   showNewsletter: z.coerce.boolean().default(false),
   newsletterTitle: trimmed(80).optional().default(""),
@@ -466,12 +465,42 @@ const paramNameSchema = z
   )
   .default("");
 
+/**
+ * An sms.ir API key as the panel prints it.
+ *
+ * Only shape is checked here — whether the key is *valid* is something the
+ * provider answers, and the settings screen shows that answer as the account
+ * credit it manages (or fails) to read back.
+ */
+const apiKeySchema = z
+  .string()
+  .trim()
+  .max(200, "کلید API بیش از حد طولانی است.")
+  .refine(
+    (value) => value === "" || /^[A-Za-z0-9._:-]+$/.test(value),
+    "کلید API فقط می‌تواند شامل حروف و ارقام لاتین باشد.",
+  )
+  .default("");
+
+/** The sending line, reported on the settings screen. Digits only. */
+const lineNumberSchema = z.preprocess(
+  (value) => (typeof value === "string" ? digitsOnly(value) : value),
+  z.string().max(20).default(""),
+);
+
 export const smsSettingsFormSchema = z.object({
   enabled: z.coerce.boolean().default(false),
   requirePhoneVerification: z.coerce.boolean().default(true),
 
+  apiKey: apiKeySchema,
+  /** Ticked to wipe the stored key rather than replace it. */
+  clearApiKey: z.coerce.boolean().default(false),
+  lineNumber: lineNumberSchema,
+
+  otpTemplateId: templateIdSchema,
+  otpCodeParam: paramNameSchema,
+
   staffRecipients: staffRecipientsSchema,
-  notifyStaffOnRequest: z.coerce.boolean().default(true),
   notifyStaffOnAppointment: z.coerce.boolean().default(true),
   staffTemplateId: templateIdSchema,
   staffNameParam: paramNameSchema,

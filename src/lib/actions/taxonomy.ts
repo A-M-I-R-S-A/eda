@@ -13,7 +13,6 @@ import {
   reorderArbitrators,
   reorderCategories,
   reorderFaqs,
-  reorderServices,
   reorderTestimonials,
   setNewsletterStatus,
   updateCategory,
@@ -281,18 +280,6 @@ async function handleReorder(
     console.error("[cms] reorder failed", error);
     return errorState(MESSAGES.generic);
   }
-}
-
-export async function reorderServicesAction(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  return handleReorder(formData, {
-    apply: reorderServices,
-    entity: "service",
-    label: "ترتیب خدمات",
-    paths: [ROUTES.admin.services, ROUTES.services, "/"],
-  });
 }
 
 export async function reorderFaqsAction(

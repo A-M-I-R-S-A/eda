@@ -181,12 +181,12 @@ export default async function ArticlePage({ params }: PageProps) {
                     این نوشته جنبه اطلاع‌رسانی عمومی دارد و جایگزین مشاوره حقوقی
                     متناسب با شرایط پرونده شما نیست. برای بررسی موضوع خود،{" "}
                     <Link
-                      href={ROUTES.consultation}
+                      href={ROUTES.contact}
                       className="font-medium text-navy-800 underline underline-offset-4 decoration-gold-300 hover:decoration-gold-500"
                     >
-                      درخواست مشاوره
-                    </Link>{" "}
-                    ثبت کنید.
+                      با مؤسسه تماس بگیرید
+                    </Link>
+                    .
                   </p>
                 </aside>
               </div>

@@ -1,21 +1,19 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { Article, Service } from "@/types";
+import type { Article } from "@/types";
 import {
   getArticleById,
   getRevision,
-  getServiceById,
   recordRevision,
   updateArticle,
-  updateService,
 } from "@/lib/db";
 import { ROUTES } from "@/lib/config/routes";
 import { audit, guard, MESSAGES, text } from "./guard";
 import { errorState, successState, type FormState } from "./types";
 
 /**
- * Restoring a previous version of an article or a service.
+ * Restoring a previous version of an article.
  *
  * Two things every restore does, and the reason they matter:
  *
@@ -92,77 +90,6 @@ export async function restoreArticleRevisionAction(
     return successState("نسخه انتخاب‌شده بازگردانی شد.");
   } catch (error) {
     console.error("[cms] restore article revision failed", error);
-    return errorState(MESSAGES.generic);
-  }
-}
-
-export async function restoreServiceRevisionAction(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const gate = await guard(formData, "content");
-  if (!gate.ok) return gate.state;
-
-  const revisionId = text(formData, "revisionId");
-  if (!revisionId) return errorState(MESSAGES.invalid);
-
-  try {
-    const revision = await getRevision(revisionId);
-    if (!revision || revision.entity !== "service") {
-      return errorState("نسخه مورد نظر یافت نشد.");
-    }
-
-    const current = await getServiceById(revision.entityId);
-    if (!current) return errorState("خدمت مورد نظر یافت نشد.");
-
-    const snapshot = revision.snapshot as Service;
-
-    await recordRevision({
-      entity: "service",
-      entityId: current.id,
-      label: current.title,
-      authorId: gate.session.sub,
-      authorName: gate.session.name,
-      snapshot: current,
-      note: "پیش از بازگردانی نسخه قبلی",
-    });
-
-    const updated = await updateService(current.id, {
-      title: snapshot.title,
-      shortDescription: snapshot.shortDescription,
-      body: snapshot.body,
-      category: snapshot.category,
-      icon: snapshot.icon,
-      highlights: snapshot.highlights,
-      process: snapshot.process,
-      faqIds: snapshot.faqIds,
-      relatedSlugs: snapshot.relatedSlugs,
-      image: snapshot.image,
-      ctaLabel: snapshot.ctaLabel,
-      ctaHref: snapshot.ctaHref,
-      status: snapshot.status,
-      scheduledFor: snapshot.scheduledFor,
-      seo: snapshot.seo,
-    });
-
-    if (!updated) return errorState("بازگردانی انجام نشد.");
-
-    await audit(gate.session, {
-      action: "restore",
-      entity: "service",
-      entityId: current.id,
-      entityLabel: current.title,
-      detail: `بازگردانی نسخه ${revision.at}`,
-    });
-
-    revalidatePath(ROUTES.admin.services);
-    revalidatePath(ROUTES.admin.serviceEdit(current.id));
-    revalidatePath(ROUTES.service(updated.slug));
-    revalidatePath(ROUTES.services);
-
-    return successState("نسخه انتخاب‌شده بازگردانی شد.");
-  } catch (error) {
-    console.error("[cms] restore service revision failed", error);
     return errorState(MESSAGES.generic);
   }
 }

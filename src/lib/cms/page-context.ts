@@ -7,7 +7,6 @@ import {
   listArticles,
   listCategories,
   listFaqs,
-  listServices,
   listTestimonials,
 } from "@/lib/db";
 import { getCsrfToken } from "@/lib/security/csrf";
@@ -23,7 +22,6 @@ import type { SectionContext } from "@/components/sections/renderer";
  */
 
 const NEEDS: Partial<Record<SectionType, keyof Loaded>> = {
-  services: "services",
   articles: "articles",
   faq: "faqs",
   team: "team",
@@ -31,7 +29,6 @@ const NEEDS: Partial<Record<SectionType, keyof Loaded>> = {
 };
 
 interface Loaded {
-  services: SectionContext["services"];
   articles: SectionContext["articles"];
   faqs: SectionContext["faqs"];
   team: SectionContext["team"];
@@ -54,7 +51,6 @@ export async function buildSectionContext(
   const [
     settings,
     categories,
-    services,
     articles,
     faqs,
     team,
@@ -63,7 +59,6 @@ export async function buildSectionContext(
   ] = await Promise.all([
     getSettings(),
     listCategories({ publishedOnly: true }),
-    needs("services") ? listServices({ publishedOnly: true }) : [],
     needs("articles")
       ? listArticles({ publishedOnly: true, pageSize: 12 }).then((r) => r.items)
       : [],
@@ -76,7 +71,6 @@ export async function buildSectionContext(
   return {
     settings,
     categories,
-    services,
     articles,
     faqs,
     team,

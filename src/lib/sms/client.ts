@@ -11,9 +11,11 @@ import "server-only";
  * writing message bodies would imply an ability the account lacks, and every
  * send would be refused.
  *
- * Credentials come from the environment only. They are deliberately not part
- * of `SiteSettings`, so an editor with access to the admin panel cannot read
- * the account's API key.
+ * Credentials are configured from «تنظیمات › پیامک» and fall back to the
+ * environment when a field is left empty, so an installation that was set up
+ * with `SMSIR_*` variables keeps working without being re-entered. The screen
+ * that edits them is behind the `advanced` capability, not `settings`: the
+ * account's key is what SMS credit is spent against.
  */
 
 const API_BASE = process.env.SMSIR_API_BASE || "https://api.sms.ir/v1";
@@ -27,22 +29,42 @@ export interface SmsCredentials {
   otpParameter: string;
 }
 
+/** The stored half of the configuration, as `SiteSettings.sms` holds it. */
+export interface SmsCredentialSettings {
+  apiKey?: string;
+  lineNumber?: string;
+  otpTemplateId?: string;
+  otpCodeParam?: string;
+}
+
 /**
- * Reads provider credentials, or explains what is missing.
+ * Resolves provider credentials from settings, falling back to the environment.
  *
- * Returns `null` rather than throwing so callers can degrade to "logged but
- * not sent" instead of failing a visitor's form submission.
+ * Per field rather than all-or-nothing: an office that has `SMSIR_API_KEY` on
+ * the server and types only a template id into the panel gets a working
+ * configuration, which is the whole point of making these editable.
+ *
+ * Returns `null` rather than throwing when there is no key at all, so callers
+ * degrade to "logged but not sent" instead of failing a visitor's submission.
  */
-export function readCredentials(): SmsCredentials | null {
-  const apiKey = process.env.SMSIR_API_KEY?.trim();
+export function resolveCredentials(
+  sms: SmsCredentialSettings | undefined,
+): SmsCredentials | null {
+  const apiKey =
+    sms?.apiKey?.trim() || process.env.SMSIR_API_KEY?.trim() || "";
   if (!apiKey) return null;
 
   return {
     apiKey,
-    /** Only reported on the settings screen; nothing sends from a line. */
-    lineNumber: process.env.SMSIR_LINE_NUMBER?.trim() || "",
-    otpTemplateId: Number(process.env.SMSIR_OTP_TEMPLATE_ID || 0),
-    otpParameter: process.env.SMSIR_OTP_PARAM_NAME?.trim() || "CODE",
+    lineNumber:
+      sms?.lineNumber?.trim() || process.env.SMSIR_LINE_NUMBER?.trim() || "",
+    otpTemplateId: Number(
+      sms?.otpTemplateId?.trim() || process.env.SMSIR_OTP_TEMPLATE_ID || 0,
+    ),
+    otpParameter:
+      sms?.otpCodeParam?.trim() ||
+      process.env.SMSIR_OTP_PARAM_NAME?.trim() ||
+      "CODE",
   };
 }
 
@@ -186,8 +208,9 @@ export async function sendVerificationCode(
 }
 
 /** Remaining account credit, for the settings screen. `null` when unavailable. */
-export async function fetchCredit(): Promise<number | null> {
-  const credentials = readCredentials();
+export async function fetchCredit(
+  credentials: SmsCredentials | null,
+): Promise<number | null> {
   if (!credentials) return null;
 
   const controller = new AbortController();

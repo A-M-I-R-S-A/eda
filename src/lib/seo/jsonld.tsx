@@ -1,4 +1,4 @@
-import type { Arbitrator, Article, FaqItem, Service, SiteSettings } from "@/types";
+import type { Arbitrator, Article, FaqItem, SiteSettings } from "@/types";
 import { toPlainText } from "@/lib/content/rich-text";
 import { ROUTES } from "@/lib/config/routes";
 import { SITE_NAME, SITE_URL, absoluteUrl } from "./metadata";
@@ -112,37 +112,6 @@ export function websiteJsonLd(settings: SiteSettings): Json {
   };
 }
 
-export function serviceJsonLd(service: Service, settings: SiteSettings): Json {
-  return {
-    "@context": "https://schema.org",
-    "@type": "LegalService",
-    "@id": absoluteUrl(ROUTES.service(service.slug)) + "#service",
-    name: service.title,
-    description: service.shortDescription,
-    url: absoluteUrl(ROUTES.service(service.slug)),
-    provider: { "@id": `${SITE_URL}/#organization` },
-    areaServed: { "@type": "Country", name: "ایران" },
-    serviceType: service.title,
-    inLanguage: "fa-IR",
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: settings.address,
-      addressLocality: "تهران",
-      addressCountry: "IR",
-    },
-  };
-}
-
-/**
- * Person schema for an arbitrator.
- *
- * `isPrincipal` selects the canonical URL: the institution's single arbitrator
- * lives at `/arbitrator`, any later addition at `/arbitrator/<slug>`.
- *
- * Unsupplied fields are omitted rather than emitted empty — a `memberOf: []`
- * or a blank `description` asserts something about a real person that nobody
- * has told us.
- */
 export function personJsonLd(
   arbitrator: Arbitrator,
   { isPrincipal = true }: { isPrincipal?: boolean } = {},

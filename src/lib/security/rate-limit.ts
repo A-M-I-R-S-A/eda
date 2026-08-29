@@ -193,7 +193,6 @@ export function rateLimitMessage(retryAfter: number): string {
 /** Shared policy constants so limits are declared in one place. */
 export const RATE_LIMITS = {
   login: { limit: 5, windowMs: 10 * 60 * 1000 },
-  consultation: { limit: 5, windowMs: 60 * 60 * 1000 },
   appointment: { limit: 6, windowMs: 60 * 60 * 1000 },
   contact: { limit: 5, windowMs: 60 * 60 * 1000 },
   newsletter: { limit: 5, windowMs: 60 * 60 * 1000 },

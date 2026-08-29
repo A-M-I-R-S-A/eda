@@ -11,7 +11,7 @@ import { FormSection, ToggleField } from "./form-shell";
 import { MediaField } from "./media-picker";
 
 /**
- * The SEO block shared by pages, articles and services.
+ * The SEO block shared by pages and articles.
  *
  * Two things earn their place here:
  *

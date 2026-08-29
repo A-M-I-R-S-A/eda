@@ -5,7 +5,6 @@ import {
   listArticles,
   listCategories,
   listPages,
-  listServices,
 } from "@/lib/db";
 import { ROUTES } from "@/lib/config/routes";
 import { absoluteUrl } from "@/lib/seo/metadata";
@@ -25,7 +24,7 @@ export const dynamic = "force-dynamic";
  * XML sitemap.
  *
  * Built entirely from what the CMS currently publishes: pages an administrator
- * created, live services, categories and articles. A page marked `noindex` is
+ * created, categories and articles. A page marked `noindex` is
  * left out — listing a URL we have asked crawlers to ignore is a contradiction
  * search engines report as an error.
  *
@@ -37,10 +36,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   if (!settings.seo.sitemapEnabled || !settings.seo.indexSite) return [];
 
-  const [pages, services, additionalArbitrators, categories, articles] =
+  const [pages, additionalArbitrators, categories, articles] =
     await Promise.all([
       listPages({ liveOnly: true }),
-      listServices({ publishedOnly: true }),
       // The principal arbitrator is the static `/arbitrator` route; only any
       // *further* arbitrators need their own slug entries.
       listAdditionalArbitrators(),
@@ -62,15 +60,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       // The home page outranks everything; navigation pages come next.
       priority: page.slug ? (page.showInNav ? 0.8 : 0.5) : 1,
     })),
-
-    ...services
-      .filter((service) => !service.seo.noindex)
-      .map((service) => ({
-        url: absoluteUrl(ROUTES.service(service.slug)),
-        lastModified: new Date(service.updatedAt),
-        changeFrequency: "monthly" as const,
-        priority: 0.85,
-      })),
 
     ...additionalArbitrators.map((arbitrator) => ({
       url: absoluteUrl(ROUTES.arbitratorProfile(arbitrator.slug)),

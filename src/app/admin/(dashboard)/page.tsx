@@ -58,7 +58,6 @@ interface QuickAction {
 const QUICK_ACTIONS: QuickAction[] = [
   { href: ROUTES.admin.pageNew, label: "صفحه جدید", icon: "layers", permission: "content" },
   { href: ROUTES.admin.articleNew, label: "مقاله جدید", icon: "article", permission: "content" },
-  { href: ROUTES.admin.serviceNew, label: "خدمت جدید", icon: "briefcase", permission: "content" },
   { href: ROUTES.admin.faqNew, label: "پرسش متداول", icon: "question", permission: "content" },
   { href: ROUTES.admin.media, label: "بارگذاری رسانه", icon: "image", permission: "media" },
   { href: ROUTES.admin.navigation, label: "ویرایش منو", icon: "link", permission: "settings" },
@@ -187,12 +186,6 @@ export default async function AdminOverviewPage() {
             icon="article"
             href={ROUTES.admin.articles}
             hint={`${faNumber(stats.publishedArticles)} مقاله منتشر شده`}
-          />
-          <StatTile
-            label="خدمات فعال"
-            value={stats.totalServices}
-            icon="briefcase"
-            href={ROUTES.admin.services}
           />
           <StatTile
             label="فایل‌های رسانه"

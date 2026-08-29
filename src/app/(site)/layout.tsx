@@ -1,4 +1,4 @@
-import { getSettings, listServices } from "@/lib/db";
+import { getSettings } from "@/lib/db";
 import { getCsrfToken } from "@/lib/security/csrf";
 import { SiteHeader } from "@/components/layout/site-header";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -17,9 +17,8 @@ export default async function SiteLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [settings, services, csrfToken] = await Promise.all([
+  const [settings, csrfToken] = await Promise.all([
     getSettings(),
-    listServices({ publishedOnly: true }),
     getCsrfToken(),
   ]);
 
@@ -43,11 +42,7 @@ export default async function SiteLayout({
         {children}
       </main>
 
-      <SiteFooter
-        settings={settings}
-        services={services}
-        csrfToken={csrfToken}
-      />
+      <SiteFooter settings={settings} csrfToken={csrfToken} />
     </div>
   );
 }

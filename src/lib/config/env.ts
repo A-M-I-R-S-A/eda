@@ -117,17 +117,19 @@ export function checkEnvironment(): EnvReport {
   /* -- SMS --------------------------------------------------------------- */
 
   /**
-   * Only the OTP template id lives in the environment.
+   * Nothing to check here any more.
    *
-   * The staff-alert and client-update template ids are configured in the admin
-   * panel — they are not secrets, and the office changes them when sms.ir
-   * approves a new template, which should not require a deploy.
+   * The whole sms.ir configuration — key, line and every template id — is
+   * edited at «تنظیمات › پیامک» and stored in the database; the `SMSIR_*`
+   * variables are only a fallback for installations that were set up before
+   * the screen existed. A missing value is therefore not a misconfiguration,
+   * and this function cannot tell the difference: it runs from
+   * `instrumentation.ts` before the first request, where reaching the database
+   * is exactly what the build is not allowed to require.
+   *
+   * The settings screen reports what is actually missing, against the resolved
+   * configuration, and proves the key works by reading back the account credit.
    */
-  if (process.env.SMSIR_API_KEY && !process.env.SMSIR_OTP_TEMPLATE_ID) {
-    warnings.push(
-      "SMSIR_OTP_TEMPLATE_ID is not set; phone verification codes cannot be sent.",
-    );
-  }
 
   return { errors, warnings };
 }

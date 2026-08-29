@@ -99,35 +99,6 @@ const timeSchema = z
 /*  Public forms                                                              */
 /* -------------------------------------------------------------------------- */
 
-export const requestTypeEnum = z.enum(
-  ["consultation", "arbitration", "mediation", "contract-review", "representation"],
-  { message: "نوع درخواست را انتخاب کنید." },
-);
-
-export const contactMethodEnum = z.enum(
-  ["phone", "whatsapp", "email", "in-person"],
-  { message: "روش تماس ترجیحی را انتخاب کنید." },
-);
-
-export const callWindowEnum = z.enum(["morning", "afternoon", "evening"], {
-  message: "زمان مناسب تماس را انتخاب کنید.",
-});
-
-export const consultationSchema = z.object({
-  fullName: faText(3, 100, "نام و نام خانوادگی"),
-  phone: mobileSchema,
-  email: optionalEmailSchema,
-  requestType: requestTypeEnum,
-  legalArea: z.string().min(1, "حوزه حقوقی را انتخاب کنید.").max(80),
-  subject: faText(5, 150, "موضوع درخواست"),
-  description: faText(30, 5000, "شرح موضوع"),
-  preferredContact: contactMethodEnum,
-  preferredWindow: callWindowEnum,
-  consent: consentSchema,
-});
-
-export type ConsultationInput = z.infer<typeof consultationSchema>;
-
 export const meetingModeEnum = z.enum(["in-person", "online", "phone"], {
   message: "نوع برگزاری جلسه را انتخاب کنید.",
 });
@@ -249,28 +220,6 @@ export const articleFormSchema = z
   );
 
 export type ArticleFormInput = z.infer<typeof articleFormSchema>;
-
-export const serviceFormSchema = z.object({
-  title: faText(3, 80, "عنوان خدمت"),
-  slug: slugSchema,
-  shortDescription: faText(30, 300, "توضیح کوتاه"),
-  body: faText(100, 30000, "متن کامل"),
-  category: z.enum(["arbitration", "dispute-resolution", "advisory"]),
-  icon: z.string().min(1),
-  highlights: z.preprocess(
-    linesToArray,
-    z.array(z.string().max(200)).max(8, "حداکثر ۸ مورد مجاز است."),
-  ),
-  image: optionalString(400),
-  ctaLabel: optionalString(60),
-  ctaHref: optionalString(400),
-  order: z.coerce.number().int().min(0).max(999),
-  status: contentStatusEnum.default("published"),
-  scheduledFor: optionalString(40),
-  seo: cmsSeoSchema,
-});
-
-export type ServiceFormInput = z.infer<typeof serviceFormSchema>;
 
 export const arbitratorFormSchema = z.object({
   fullName: faText(3, 100, "نام و نام خانوادگی"),

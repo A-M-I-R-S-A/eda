@@ -6,7 +6,7 @@ import { FormsTabs } from "@/components/admin/forms-tabs";
 /**
  * The submissions inbox.
  *
- * Contact messages, consultation enquiries, bookings and newsletter sign-ups
+ * Contact messages, bookings and newsletter sign-ups
  * all arrive from public forms, so they share one screen with one status
  * vocabulary instead of four separate inboxes.
  */

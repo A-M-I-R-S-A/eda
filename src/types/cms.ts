@@ -75,7 +75,6 @@ export type SectionType =
   | "hero"
   | "text-image"
   | "rich-text"
-  | "services"
   | "cards"
   | "features"
   | "stats"
@@ -304,7 +303,6 @@ export interface FooterSettings {
   copyright: string;
   showContactBlock: boolean;
   showSocials: boolean;
-  showServiceLinks: boolean;
   showAdminLink: boolean;
   /** Newsletter sign-up block. */
   showNewsletter: boolean;
@@ -478,6 +476,10 @@ export type AuditEntity =
   | "page"
   | "section"
   | "article"
+  /**
+   * Historical only. The services module was removed; entries written while
+   * it existed stay in the log, so the value has to keep resolving to a label.
+   */
   | "service"
   | "arbitrator"
   | "faq"
@@ -516,7 +518,7 @@ export interface AuditLogEntry {
 /*  Revisions                                                                 */
 /* -------------------------------------------------------------------------- */
 
-export type RevisionEntity = "page" | "article" | "service" | "settings";
+export type RevisionEntity = "page" | "article" | "settings";
 
 export interface Revision {
   id: ID;

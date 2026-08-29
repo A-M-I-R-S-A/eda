@@ -14,7 +14,7 @@ import type { SessionPayload, UserRole } from "@/types";
  */
 
 export type Permission =
-  /** Pages, sections, articles, services, FAQ, categories, people, testimonials. */
+  /** Pages, sections, articles, FAQ, categories, people, testimonials. */
   | "content"
   /** Upload, rename and delete media library files. */
   | "media"

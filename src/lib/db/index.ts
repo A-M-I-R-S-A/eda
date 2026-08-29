@@ -14,7 +14,6 @@ import type {
   InternalNote,
   PublicUser,
   RequestStatus,
-  Service,
   SiteSettings,
   User,
   UserRole,
@@ -69,76 +68,6 @@ export async function updateSettings(
   return mutate((db) => {
     db.settings = { ...db.settings, ...patch, id: "site", updatedAt: touch() };
     return clone(db.settings);
-  });
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Services                                                                  */
-/* -------------------------------------------------------------------------- */
-
-export async function listServices(
-  options: { publishedOnly?: boolean; category?: string; limit?: number } = {},
-): Promise<Service[]> {
-  const db = await readDb();
-  let items = options.publishedOnly ? db.services.filter(isLive) : db.services;
-  if (options.category) {
-    items = items.filter((s) => s.category === options.category);
-  }
-
-  const sorted = clone(items).sort((a, b) => a.order - b.order);
-  return options.limit ? sorted.slice(0, options.limit) : sorted;
-}
-
-export async function getServiceBySlug(slug: string): Promise<Service | null> {
-  const db = await readDb();
-  return clone(db.services.find((s) => s.slug === slug) ?? null);
-}
-
-export async function getServiceById(id: ID): Promise<Service | null> {
-  const db = await readDb();
-  return clone(db.services.find((s) => s.id === id) ?? null);
-}
-
-export async function createService(
-  data: Omit<Service, "id" | "createdAt" | "updatedAt">,
-): Promise<Service> {
-  return mutate((db) => {
-    const now = touch();
-    const record: Service = { ...data, id: newId(), createdAt: now, updatedAt: now };
-    db.services.push(record);
-    return clone(record);
-  });
-}
-
-export async function updateService(
-  id: ID,
-  patch: Partial<Service>,
-): Promise<Service | null> {
-  return mutate((db) => {
-    const index = db.services.findIndex((s) => s.id === id);
-    if (index === -1) return null;
-    db.services[index] = { ...db.services[index], ...patch, id, updatedAt: touch() };
-    return clone(db.services[index]);
-  });
-}
-
-export async function deleteService(id: ID): Promise<boolean> {
-  return mutate((db) => {
-    const before = db.services.length;
-    db.services = db.services.filter((s) => s.id !== id);
-    return db.services.length < before;
-  });
-}
-
-export async function reorderServices(ids: ID[]): Promise<void> {
-  await mutate((db) => {
-    ids.forEach((id, position) => {
-      const service = db.services.find((s) => s.id === id);
-      if (service) {
-        service.order = position;
-        service.updatedAt = touch();
-      }
-    });
   });
 }
 
@@ -973,7 +902,6 @@ export interface DashboardStats {
   publishedArticles: number;
   draftArticles: number;
   scheduledArticles: number;
-  totalServices: number;
   totalPages: number;
   publishedPages: number;
   draftPages: number;
@@ -1037,7 +965,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     publishedArticles: db.articles.filter(isLive).length,
     draftArticles: db.articles.filter((a) => a.status === "draft").length,
     scheduledArticles: db.articles.filter((a) => a.status === "scheduled").length,
-    totalServices: db.services.filter(isLive).length,
     totalPages: db.pages.length,
     publishedPages: db.pages.filter(isLive).length,
     draftPages: db.pages.filter((p) => p.status === "draft").length,

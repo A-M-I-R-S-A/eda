@@ -7,20 +7,17 @@ import type {
   Category,
   ContentStatus,
   FaqItem,
-  Service,
 } from "@/types";
 import { cn } from "@/lib/utils/cn";
 import {
   saveArbitratorAction,
   saveArticleAction,
   saveFaqAction,
-  saveServiceAction,
 } from "@/lib/actions/admin";
 import {
   CONTENT_STATUS,
   CONTENT_STATUS_OPTIONS,
   FAQ_TOPIC_OPTIONS,
-  SERVICE_CATEGORY,
 } from "@/lib/config/labels";
 import { CREDENTIAL_HINT, serializeCredentials } from "@/lib/cms/credentials";
 import { ROUTES } from "@/lib/config/routes";
@@ -49,7 +46,7 @@ import { SeoFieldset } from "./seo-fieldset";
 
 /**
  * Draft / published / scheduled / archived, with the schedule field appearing
- * only when it is relevant. Shared by articles and services so the workflow
+ * only when it is relevant. Shared by every content form so the workflow
  * reads identically wherever it appears.
  */
 function PublicationSection({
@@ -279,231 +276,6 @@ export function ArticleForm({
               defaultChecked={article?.featured ?? false}
             />
           </PublicationSection>
-        </>
-      )}
-    </FormShell>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Service                                                                   */
-/* -------------------------------------------------------------------------- */
-
-const SERVICE_ICONS: IconName[] = [
-  "scale-minimal",
-  "handshake",
-  "globe",
-  "bridge",
-  "document",
-  "shield",
-  "briefcase",
-  "columns",
-  "compass",
-  "layers",
-];
-
-export function ServiceForm({
-  csrfToken,
-  service,
-}: {
-  csrfToken: string;
-  service?: Service;
-}) {
-  const [icon, setIcon] = useState<IconName>(
-    (service?.icon as IconName) ?? "scale-minimal",
-  );
-  const [body, setBody] = useState(service?.body ?? "");
-  const [image, setImage] = useState(service?.image ?? "");
-  const [title, setTitle] = useState(service?.title ?? "");
-  const [shortDescription, setShortDescription] = useState(
-    service?.shortDescription ?? "",
-  );
-
-  return (
-    <FormShell
-      action={saveServiceAction}
-      csrfToken={csrfToken}
-      id={service?.id}
-      submitLabel={service ? "ذخیره تغییرات" : "ثبت خدمت"}
-      cancelHref={ROUTES.admin.services}
-      successRedirect={ROUTES.admin.services}
-    >
-      {({ error }) => (
-        <>
-          <FormSection title="اطلاعات خدمت">
-            <Field htmlFor="title" label="عنوان خدمت" required error={error("title")}>
-              <Input
-                id="title"
-                name="title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                required
-                invalid={Boolean(error("title"))}
-              />
-            </Field>
-
-            <SlugField
-              defaultValue={service?.slug}
-              sourceId="title"
-              error={error("slug")}
-            />
-
-            <Field
-              htmlFor="shortDescription"
-              label="توضیح کوتاه"
-              required
-              hint="در کارت خدمت و فهرست خدمات نمایش داده می‌شود."
-              error={error("shortDescription")}
-            >
-              <Textarea
-                id="shortDescription"
-                name="shortDescription"
-                rows={3}
-                value={shortDescription}
-                onChange={(event) => setShortDescription(event.target.value)}
-                required
-                invalid={Boolean(error("shortDescription"))}
-              />
-            </Field>
-
-            <Field htmlFor="body" label="متن کامل" required error={error("body")}>
-              <RichTextEditor
-                id="body"
-                name="body"
-                value={body}
-                onChange={setBody}
-                csrfToken={csrfToken}
-                rows={18}
-                invalid={Boolean(error("body"))}
-              />
-            </Field>
-
-            <Field
-              htmlFor="highlights"
-              label="نکات کلیدی"
-              hint="هر نکته را در یک خط جداگانه بنویسید. حداکثر ۸ مورد."
-              error={error("highlights")}
-            >
-              <Textarea
-                id="highlights"
-                name="highlights"
-                rows={5}
-                defaultValue={service?.highlights.join("\n")}
-                placeholder={"رسیدگی محرمانه\nمهلت مشخص صدور رأی"}
-                invalid={Boolean(error("highlights"))}
-              />
-            </Field>
-          </FormSection>
-
-          <FormSection title="نمایش و دسته‌بندی">
-            <div className="grid gap-6 sm:grid-cols-2">
-              <Field
-                htmlFor="category"
-                label="دسته‌بندی"
-                required
-                error={error("category")}
-              >
-                <Select
-                  id="category"
-                  name="category"
-                  defaultValue={service?.category ?? "arbitration"}
-                  options={(
-                    Object.keys(SERVICE_CATEGORY) as (keyof typeof SERVICE_CATEGORY)[]
-                  ).map((key) => ({ value: key, label: SERVICE_CATEGORY[key] }))}
-                />
-              </Field>
-
-              <Field
-                htmlFor="order"
-                label="ترتیب نمایش"
-                hint="عدد کوچک‌تر، بالاتر نمایش داده می‌شود."
-                error={error("order")}
-              >
-                <Input
-                  id="order"
-                  name="order"
-                  type="number"
-                  min={0}
-                  max={999}
-                  defaultValue={service?.order ?? 10}
-                  ltr
-                  invalid={Boolean(error("order"))}
-                />
-              </Field>
-            </div>
-
-            <div>
-              <p className="mb-3 text-[0.875rem] font-semibold text-navy-800">آیکون</p>
-              <input type="hidden" name="icon" value={icon} />
-              <div className="flex flex-wrap gap-2">
-                {SERVICE_ICONS.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => setIcon(option)}
-                    aria-pressed={icon === option}
-                    aria-label={option}
-                    className={cn(
-                      "flex size-12 items-center justify-center rounded-sm border transition-colors",
-                      icon === option
-                        ? "border-navy-900 bg-navy-900 text-gold-200"
-                        : "border-line-2 text-navy-700 hover:border-navy-500",
-                    )}
-                  >
-                    <Icon name={option} size={21} />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <MediaField
-              name="image"
-              label="تصویر خدمت"
-              value={image}
-              onChange={setImage}
-              csrfToken={csrfToken}
-              hint="اختیاری. در صفحه خدمت و اشتراک‌گذاری استفاده می‌شود."
-            />
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <Field
-                htmlFor="ctaLabel"
-                label="متن دکمه اقدام"
-                hint="در پایان صفحه خدمت نمایش داده می‌شود."
-              >
-                <Input
-                  id="ctaLabel"
-                  name="ctaLabel"
-                  defaultValue={service?.ctaLabel ?? ""}
-                  placeholder="ثبت درخواست"
-                />
-              </Field>
-
-              <Field htmlFor="ctaHref" label="نشانی دکمه اقدام">
-                <Input
-                  id="ctaHref"
-                  name="ctaHref"
-                  defaultValue={service?.ctaHref ?? ""}
-                  ltr
-                  placeholder="/consultation"
-                />
-              </Field>
-            </div>
-          </FormSection>
-
-          <SeoFieldset
-            seo={service?.seo}
-            csrfToken={csrfToken}
-            fallbackTitle={title}
-            fallbackDescription={shortDescription}
-            path={`/services/${service?.slug ?? ""}`}
-          />
-
-          <PublicationSection
-            status={service?.status}
-            scheduledFor={service?.scheduledFor}
-            error={error}
-          />
         </>
       )}
     </FormShell>

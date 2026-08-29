@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { NavLink, Service, SiteSettings } from "@/types";
+import type { NavLink, SiteSettings } from "@/types";
 import { fa, faPhone } from "@/lib/utils/persian";
 import { toJalali } from "@/lib/utils/jalali";
 import { ROUTES } from "@/lib/config/routes";
@@ -14,8 +14,8 @@ import { NewsletterForm } from "@/components/forms/newsletter-form";
  *
  * Columns, links, quick actions, the legal strip and the copyright line are
  * all `settings.footer` records edited at `/admin/navigation/footer`. The one
- * list this component still derives is the services column, which mirrors the
- * live service catalogue rather than duplicating it as hand-typed links.
+ * Every list is a CMS record: columns, quick actions and legal links are all
+ * edited at `/admin/navigation/footer`.
  */
 
 const visible = (links: NavLink[] = []) =>
@@ -71,17 +71,14 @@ function FooterLink({
 
 export function SiteFooter({
   settings,
-  services,
   csrfToken,
 }: {
   settings: SiteSettings;
-  services: Service[];
   /** Required only when the newsletter block is switched on. */
   csrfToken?: string;
 }) {
   const footer = settings.footer;
   const jalaliYear = toJalali(new Date()).jy;
-  const topServices = services.slice(0, 6);
 
   const columns = [...(footer.columns ?? [])]
     .filter((column) => column.visible)
@@ -97,12 +94,9 @@ export function SiteFooter({
     .replace("{year}", fa(jalaliYear))
     .replace("{name}", settings.institutionName);
 
-  // Columns share the grid with identity, services and contact, so the width
-  // of each depends on how many blocks are actually switched on.
-  const secondaryBlocks =
-    columns.length +
-    (footer.showServiceLinks && topServices.length ? 1 : 0) +
-    (footer.showContactBlock ? 1 : 0);
+  // Columns share the grid with identity and contact, so the width of each
+  // depends on how many blocks are actually switched on.
+  const secondaryBlocks = columns.length + (footer.showContactBlock ? 1 : 0);
 
   return (
     <footer className="on-navy relative overflow-hidden">
@@ -188,26 +182,6 @@ export function SiteFooter({
               </FooterColumnBlock>
             </div>
           ))}
-
-          {/* services — mirrors the live catalogue */}
-          {footer.showServiceLinks && topServices.length > 0 && (
-            <div className="lg:col-span-3">
-              <FooterColumnBlock title="خدمات تخصصی">
-                <ul className="flex flex-col">
-                  {topServices.map((service) => (
-                    <li key={service.id}>
-                      <FooterLink href={ROUTES.service(service.slug)}>
-                        {service.title}
-                      </FooterLink>
-                    </li>
-                  ))}
-                  <li>
-                    <FooterLink href={ROUTES.services}>همه خدمات</FooterLink>
-                  </li>
-                </ul>
-              </FooterColumnBlock>
-            </div>
-          )}
 
           {/* contact */}
           {footer.showContactBlock && (

@@ -352,8 +352,8 @@ export function AppointmentWizard({
       <noscript>
         <div className="mb-8 rounded-sm border border-warning/25 bg-warning-soft px-5 py-4 text-[0.875rem] leading-[2] text-warning">
           برای استفاده از فرم رزرو آنلاین، جاوااسکریپت باید فعال باشد. می‌توانید از
-          طریق <a href={ROUTES.consultation}>فرم درخواست مشاوره</a> اقدام کنید یا با
-          شماره <span dir="ltr">{faPhone(phone)}</span> تماس بگیرید.
+          طریق <a href={ROUTES.contact}>فرم تماس</a> اقدام کنید یا با شماره{" "}
+          <span dir="ltr">{faPhone(phone)}</span> تماس بگیرید.
         </div>
       </noscript>
 
@@ -434,8 +434,8 @@ export function AppointmentWizard({
                   className="border border-line"
                   icon="users"
                   title="در حال حاضر امکان رزرو آنلاین وجود ندارد"
-                  description="لطفاً از طریق فرم درخواست مشاوره یا تماس تلفنی اقدام کنید."
-                  action={{ label: "درخواست مشاوره", href: ROUTES.consultation }}
+                  description="لطفاً از طریق فرم تماس یا تماس تلفنی اقدام کنید."
+                  action={{ label: "تماس با ما", href: ROUTES.contact }}
                 />
               ) : (
                 <div className="flex flex-col gap-3">

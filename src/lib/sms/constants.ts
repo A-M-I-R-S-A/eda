@@ -7,6 +7,20 @@
  * browser bundle and broke the build.
  */
 
+/**
+ * What a one-time code proves.
+ *
+ * Declared here rather than beside the OTP helpers because the verification
+ * widget is a client component: `./otp` is `server-only` and reaches the
+ * database, so a client import of the type from there would have to be erased
+ * by hand every time somebody touches it.
+ *
+ * Booking is the only public form left that asks for a verified number. The
+ * union stays a union so adding a second purpose does not change the proof
+ * format, which binds the purpose into its signature.
+ */
+export type OtpPurpose = "appointment";
+
 /** Persian SMS is UCS-2: 70 characters per part, so this is roughly six parts. */
 export const MAX_SMS_LENGTH = 420;
 

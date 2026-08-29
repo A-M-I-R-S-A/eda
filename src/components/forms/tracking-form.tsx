@@ -124,8 +124,8 @@ export function TrackingForm({
             <div className="flex flex-col gap-4">
               <span>{state.message}</span>
               <div className="flex flex-wrap gap-3">
-                <ButtonLink href={ROUTES.consultation} variant="outline" size="sm">
-                  ثبت درخواست جدید
+                <ButtonLink href={ROUTES.appointment} variant="outline" size="sm">
+                  رزرو وقت مشاوره
                 </ButtonLink>
                 <ButtonLink href={ROUTES.contact} variant="ghost" size="sm">
                   تماس با پشتیبانی

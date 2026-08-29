@@ -31,7 +31,7 @@ import { errorState, successState, type FormState } from "./types";
 const CSRF_ERROR =
   "اعتبار این فرم منقضی شده است. لطفاً صفحه را تازه‌سازی کرده و دوباره تلاش کنید.";
 
-const PURPOSES: OtpPurpose[] = ["consultation", "appointment"];
+const PURPOSES: OtpPurpose[] = ["appointment"];
 
 function readPurpose(value: FormDataEntryValue | null): OtpPurpose | null {
   return typeof value === "string" && PURPOSES.includes(value as OtpPurpose)

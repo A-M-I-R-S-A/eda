@@ -289,48 +289,6 @@ export const SECTION_LIBRARY: Record<SectionType, SectionDefinition> = {
     defaults: { eyebrow: "", heading: "", body: "", narrow: true },
   },
 
-  /* -- Services ---------------------------------------------------------- */
-  services: {
-    type: "services",
-    label: "خدمات",
-    description:
-      "فهرست خدمات فعال را از بخش «خدمات» می‌خواند؛ نیازی به تکرار محتوا نیست.",
-    group: "collections",
-    defaultBackground: "paper",
-    defaultSpacing: "md",
-    fields: [
-      eyebrowField,
-      { ...headingField, half: true },
-      descriptionField,
-      limitField("تعداد خدمات نمایشی", 12),
-      {
-        name: "columns",
-        label: "تعداد ستون",
-        kind: "select",
-        options: COLUMN_OPTIONS,
-        half: true,
-      },
-      {
-        name: "category",
-        label: "فقط دسته‌بندی",
-        kind: "text",
-        half: true,
-        hint: "خالی بگذارید تا همه دسته‌ها نمایش داده شود.",
-      },
-      ...linkFields,
-    ],
-    defaults: {
-      eyebrow: "",
-      heading: "خدمات ما",
-      description: "",
-      limit: 6,
-      columns: "3",
-      category: "",
-      linkText: "همه خدمات",
-      linkUrl: "/services",
-    },
-  },
-
   /* -- Cards ------------------------------------------------------------- */
   cards: {
     type: "cards",

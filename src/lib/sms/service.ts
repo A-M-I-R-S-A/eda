@@ -1,14 +1,9 @@
 import "server-only";
 
-import type {
-  Appointment,
-  ConsultationRequest,
-  SessionPayload,
-  SiteSettings,
-} from "@/types";
+import type { Appointment, SessionPayload, SiteSettings } from "@/types";
 import { getSettings, recordSms } from "@/lib/db";
 import {
-  readCredentials,
+  resolveCredentials,
   sendTemplateMessage,
   sendVerificationCode,
 } from "./client";
@@ -24,8 +19,8 @@ import { createChallenge, generateCode, type OtpPurpose } from "./otp";
  *      One parameter: the code.
  *   2. `sendStatusUpdate` — never automatic. Staff press send on the record.
  *      One parameter: the tracking or booking code.
- *   3. `notifyStaffOf*` — automatic, to the office's own numbers only.
- *      Two parameters: the staff member's name and the code.
+ *   3. `notifyStaffOfAppointment` — automatic, to the office's own numbers
+ *      only. Two parameters: the staff member's name and the code.
  *
  * Every attempt is logged, successful or not, so the office can reconcile what
  * was delivered against what the provider charged for.
@@ -37,7 +32,10 @@ const DISABLED_MESSAGE =
   "ارسال پیامک غیرفعال است. آن را از «تنظیمات › پیامک» فعال کنید.";
 
 const NO_CREDENTIALS_MESSAGE =
-  "کلید سامانه پیامک تنظیم نشده است (SMSIR_API_KEY).";
+  "کلید API سامانه پیامک وارد نشده است. آن را در «تنظیمات › پیامک» ثبت کنید.";
+
+const NO_OTP_TEMPLATE_MESSAGE =
+  "شناسه قالب کد تأیید در «تنظیمات › پیامک» وارد نشده است.";
 
 const NO_TEMPLATE_MESSAGE =
   "شناسه قالب پیامک در «تنظیمات › پیامک» وارد نشده است.";
@@ -71,8 +69,11 @@ export async function sendOtp(
 
   if (!settings.sms.enabled) return { ok: false, error: DISABLED_MESSAGE };
 
-  const credentials = readCredentials();
+  const credentials = resolveCredentials(settings.sms);
   if (!credentials) return { ok: false, error: NO_CREDENTIALS_MESSAGE };
+  if (!credentials.otpTemplateId) {
+    return { ok: false, error: NO_OTP_TEMPLATE_MESSAGE };
+  }
 
   const code = generateCode();
   await createChallenge(phone, purpose, code);
@@ -123,7 +124,7 @@ export async function sendStatusUpdate(
 
   if (!settings.sms.enabled) return { ok: false, error: DISABLED_MESSAGE };
 
-  const credentials = readCredentials();
+  const credentials = resolveCredentials(settings.sms);
   if (!credentials) return { ok: false, error: NO_CREDENTIALS_MESSAGE };
 
   const templateId = settings.sms.updateTemplateId?.trim();
@@ -157,7 +158,7 @@ export async function sendStatusUpdate(
 /* -------------------------------------------------------------------------- */
 
 /**
- * Alerts each configured staff member that new work arrived.
+ * Alerts each configured staff member that a new booking arrived.
  *
  * Sent one message per recipient rather than one to many, because the template
  * greets the person by name — a shared send could not do that.
@@ -167,7 +168,7 @@ async function alertStaff(
   entityId: string,
   settings: SiteSettings,
 ): Promise<void> {
-  const credentials = readCredentials();
+  const credentials = resolveCredentials(settings.sms);
   if (!credentials) return;
 
   const templateId = settings.sms.staffTemplateId?.trim();
@@ -204,24 +205,6 @@ async function alertStaff(
   }
 }
 
-/**
- * Alerts the office that an enquiry arrived.
- *
- * Never throws and never blocks the visitor: a provider outage must not turn a
- * successfully stored request into an error on the public form.
- */
-export async function notifyStaffOfRequest(
-  request: ConsultationRequest,
-): Promise<void> {
-  try {
-    const settings = await getSettings();
-    if (!settings.sms.enabled || !settings.sms.notifyStaffOnRequest) return;
-    await alertStaff(request.trackingCode, request.id, settings);
-  } catch (error) {
-    console.error("[sms] staff request alert failed", error);
-  }
-}
-
 export async function notifyStaffOfAppointment(
   appointment: Appointment,
 ): Promise<void> {
@@ -244,7 +227,7 @@ export async function statusUpdateReady(): Promise<boolean> {
   return (
     settings.sms.enabled &&
     Boolean(settings.sms.updateTemplateId?.trim()) &&
-    readCredentials() !== null
+    resolveCredentials(settings.sms) !== null
   );
 }
 
@@ -252,7 +235,7 @@ export async function statusUpdateReady(): Promise<boolean> {
 export async function statusUpdateBlockedReason(): Promise<string | null> {
   const settings = await getSettings();
   if (!settings.sms.enabled) return DISABLED_MESSAGE;
-  if (!readCredentials()) return NO_CREDENTIALS_MESSAGE;
+  if (!resolveCredentials(settings.sms)) return NO_CREDENTIALS_MESSAGE;
   if (!settings.sms.updateTemplateId?.trim()) return NO_TEMPLATE_MESSAGE;
   return null;
 }

@@ -13,7 +13,6 @@ import {
   buildSampleRequests,
   buildSampleUsers,
 } from "./samples";
-import { SEED_SERVICES } from "./services";
 import { SEED_SETTINGS } from "./settings";
 
 export { SEED_ARBITRATORS } from "./arbitrators";
@@ -21,7 +20,6 @@ export { SEED_ARTICLES } from "./articles";
 export { SEED_CATEGORIES, SEED_MEDIA, SEED_TESTIMONIALS } from "./cms-seed";
 export { SEED_FAQS } from "./faqs";
 export { SEED_PAGES } from "./pages";
-export { SEED_SERVICES } from "./services";
 export { SEED_SETTINGS } from "./settings";
 export * from "./defaults";
 
@@ -84,7 +82,6 @@ export async function buildSeedDatabase(
 
     pages: [...SEED_PAGES],
     media: [...SEED_MEDIA],
-    services: [...SEED_SERVICES],
     arbitrators: [...SEED_ARBITRATORS],
     articles: [...SEED_ARTICLES],
     categories: [...SEED_CATEGORIES],

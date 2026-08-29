@@ -320,9 +320,6 @@ export async function findMediaUsage(url: string): Promise<string[]> {
   for (const article of db.articles) {
     if (article.coverImage === url) usage.push(`مقاله «${article.title}»`);
   }
-  for (const service of db.services) {
-    if (service.image === url) usage.push(`خدمت «${service.title}»`);
-  }
   for (const person of db.arbitrators) {
     if (person.photoUrl === url) usage.push(`پروفایل «${person.fullName}»`);
   }

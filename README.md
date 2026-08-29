@@ -260,6 +260,27 @@ Because it deletes, two things follow that did not apply to earlier upgrades:
 The migration is idempotent and runs inside the global write lock, so a restart part-way
 through is safe and two processes cannot both apply it.
 
+**Confirming it applied**, without needing to find the application log — the schema version
+is a column, so ask the database directly:
+
+```sql
+SELECT schema_version, revision, seeded FROM db_meta WHERE id = 1;
+```
+
+`schema_version` is 4 before the upgrade and 5 after. If it is 5 and the site behaves, the
+migration is done. If it went back to 4, a version-4 process reached the database and
+re-seeded; restore the dump.
+
+The settings row is the canary for that, because a re-seed replaces it with the shipped
+defaults:
+
+```sql
+SELECT JSON_UNQUOTE(JSON_EXTRACT(data, '$.institutionName')) FROM settings WHERE id = 'site';
+```
+
+It must still return the institution's own name. If it returns the seeded placeholder, the
+settings row was overwritten — stop the application and restore.
+
 The `services` table is deliberately **not dropped** — nothing reads it any more, but the
 rows are still there if the catalogue is ever wanted back:
 

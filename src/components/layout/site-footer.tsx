@@ -110,33 +110,44 @@ export function SiteFooter({
         <div className="container-x grid gap-12 py-14 md:grid-cols-2 md:py-16 lg:grid-cols-12 lg:gap-10 lg:py-20">
           {/* identity */}
           <div className={secondaryBlocks > 2 ? "lg:col-span-4" : "lg:col-span-5"}>
+            {/*
+              An uploaded logo replaces the *monogram*, not the name.
+
+              Nesting the wordmark inside the no-logo branch — as this did —
+              made "نمایش نام مؤسسه" silently do nothing the moment a logo was
+              assigned, so an institution whose logo is a mark rather than a
+              lockup lost its name from the footer with no way to get it back.
+              The header has always treated the two independently; this matches.
+
+              When the name is written out beside it, the image is decorative
+              and its alt text would only repeat what the wordmark already says.
+            */}
             <div className="flex items-center gap-3">
               {footer.logoUrl ? (
                 <Image
                   src={footer.logoUrl}
-                  alt={settings.institutionName}
+                  alt={footer.showWordmark ? "" : settings.institutionName}
                   width={180}
                   height={44}
                   style={{ height: 44, width: "auto" }}
                   className="object-contain"
                 />
               ) : (
+                <Monogram size={40} tone="light" />
+              )}
+
+              {footer.showWordmark && (
                 <>
-                  <Monogram size={40} tone="light" />
-                  {footer.showWordmark && (
-                    <>
-                      <span aria-hidden="true" className="h-9 w-px bg-white/15" />
-                      <Wordmark
-                        name={settings.institutionName}
-                        descriptor={
-                          settings.registrationNumber
-                            ? `شماره ثبت ${settings.registrationNumber}`
-                            : undefined
-                        }
-                        tone="light"
-                      />
-                    </>
-                  )}
+                  <span aria-hidden="true" className="h-9 w-px bg-white/15" />
+                  <Wordmark
+                    name={settings.institutionName}
+                    descriptor={
+                      settings.registrationNumber
+                        ? `شماره ثبت ${settings.registrationNumber}`
+                        : undefined
+                    }
+                    tone="light"
+                  />
                 </>
               )}
             </div>

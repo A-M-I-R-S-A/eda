@@ -66,7 +66,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
         </div>
 
         <p className="relative text-[0.75rem] text-white/35">
-          © مؤسسه داوری دادآور — تمامی حقوق محفوظ است.
+          © مؤسسه داوری عدالت گستر جهان داور — تمامی حقوق محفوظ است.
         </p>
       </div>
 
@@ -79,7 +79,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
           >
             <Monogram size={34} />
             <span className="text-[1rem] font-bold text-navy-900">
-              مؤسسه داوری دادآور
+              مؤسسه داوری عدالت گستر
             </span>
           </Link>
 

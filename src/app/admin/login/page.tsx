@@ -32,7 +32,7 @@ export default async function AdminLoginPage({ searchParams }: PageProps) {
           <span aria-hidden="true" className="h-8 w-px bg-white/15" />
           <span className="flex flex-col">
             <span className="text-[1.0625rem] font-bold text-white">
-              مؤسسه داوری دادآور
+              مؤسسه داوری عدالت گستر
             </span>
             <span className="text-[0.6875rem] text-white/50">پنل مدیریت</span>
           </span>

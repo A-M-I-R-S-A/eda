@@ -205,7 +205,7 @@ export default async function ArticlePage({ params }: PageProps) {
                             <a
                               href={`#${heading.id}`}
                               className={
-                                heading.level === 3
+                                heading.level >= 3
                                   ? "block ps-4 text-[0.8125rem] leading-[1.9] text-muted transition-colors hover:text-navy-800"
                                   : "block text-[0.875rem] leading-[1.9] text-ink-2 transition-colors hover:text-navy-900"
                               }

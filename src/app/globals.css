@@ -351,6 +351,37 @@
     text-align: start;
   }
   .prose-fa th { background: var(--color-paper-2); font-weight: 600; color: var(--color-navy-900); }
+  /* A wide table scrolls inside itself rather than widening the article. */
+  .prose-fa .table-scroll { overflow-x: auto; }
+  .prose-fa h4 {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: var(--color-navy-800);
+    margin-block-start: 1.8em;
+    margin-block-end: -0.6em;
+    scroll-margin-top: calc(var(--header-h) + 2rem);
+  }
+  /* Nested lists sit inside an <li>, which the `> * + *` rule cannot reach. */
+  .prose-fa li > ul, .prose-fa li > ol { margin-block-start: 0.6rem; }
+  .prose-fa li > p { margin-block-start: 0.6rem; }
+  .prose-fa del { color: var(--color-muted); text-decoration-thickness: 1px; }
+  .prose-fa .code-block {
+    overflow-x: auto;
+    border: 1px solid var(--color-line);
+    background: var(--color-paper-2);
+    border-radius: 2px;
+    padding: 1rem 1.25rem;
+    font-size: 0.875rem;
+    line-height: 1.9;
+    color: var(--color-navy-900);
+    text-align: left;
+  }
+  .prose-fa .code-block code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: pre;
+  }
+  .prose-fa blockquote > *:first-child { margin-block-start: 0; }
+  .prose-fa blockquote > * + * { margin-block-start: 1rem; }
 
   /* -- Link with animated underline (RTL origin) ------------------------- */
   .link-underline {

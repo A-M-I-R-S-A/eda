@@ -159,7 +159,7 @@ src/
 │   ├── validation/        Zod schemas — the single source of form truth
 │   ├── db/                repositories + JSON storage adapter
 │   ├── services/          domain rules (appointment scheduling)
-│   ├── content/           Markdown-subset renderer
+│   ├── content/           Markdown renderer (no HTML, no raw innerHTML)
 │   ├── config/            routes, navigation, Persian label dictionaries
 │   ├── seo/               metadata factory, JSON-LD, OG image renderer
 │   └── utils/             Persian numerals, Jalali calendar, ids, slugs

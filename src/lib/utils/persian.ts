@@ -51,6 +51,9 @@ export function faToman(value: number): string {
 /**
  * Normalise Persian typing quirks before storing or comparing text:
  * Arabic ي/ك → Persian ی/ک, remove tatweel, collapse whitespace.
+ *
+ * Single-line only. For anything written in Markdown use
+ * `normalizeFaMultiline` — see the note there.
  */
 export function normalizeFa(value: string): string {
   return value
@@ -59,6 +62,33 @@ export function normalizeFa(value: string): string {
     .replace(/ـ/g, "")
     .replace(/‌{2,}/g, "‌")
     .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * The same normalisation for multi-line prose, with the layout left alone.
+ *
+ * `normalizeFa` collapses every run of whitespace into one space. That is
+ * correct for a name or a subject line and destructive for anything authored
+ * in Markdown: it removes the blank lines between paragraphs, the indentation
+ * that nests a list and the two trailing spaces that force a line break. An
+ * article saved through the admin form therefore arrived as one run-on
+ * paragraph with its `##` and `-` markers stranded mid-line, where the
+ * renderer can only print them literally — which is exactly what the raw-text
+ * bug on the public site was.
+ *
+ * Only whitespace *between* lines is touched here: line endings are
+ * normalised and a run of blank lines is capped at one, because Markdown
+ * gives no meaning to the second.
+ */
+export function normalizeFaMultiline(value: string): string {
+  return value
+    .replace(/\r\n?/g, "\n")
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/ـ/g, "")
+    .replace(/‌{2,}/g, "‌")
+    .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 

@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { digitsOnly, normalizeFa, toEnDigits } from "@/lib/utils/persian";
+import {
+  digitsOnly,
+  normalizeFa,
+  normalizeFaMultiline,
+  toEnDigits,
+} from "@/lib/utils/persian";
 import { cmsSeoSchema, contentStatusEnum } from "./cms";
 
 export * from "./cms";
@@ -26,6 +31,26 @@ const faText = (min: number, max: number, label: string) =>
   z
     .string()
     .transform((v) => normalizeFa(toEnDigits(v ?? "")))
+    .pipe(
+      z
+        .string()
+        .min(min, `${label} باید حداقل ${min} نویسه باشد.`)
+        .max(max, `${label} نباید بیشتر از ${max} نویسه باشد.`),
+    );
+
+/**
+ * The same, for a field written as prose rather than filled in as a value:
+ * an article body, a FAQ answer, a message, a case note.
+ *
+ * Two things `faText` does are wrong here. It flattens the text to a single
+ * line, which strips the paragraph breaks and list indentation that carry the
+ * Markdown; and it rewrites «۱۴۰۳» to «1403», which is right for a phone
+ * number and wrong in the middle of a Persian sentence.
+ */
+const faProse = (min: number, max: number, label: string) =>
+  z
+    .string()
+    .transform((v) => normalizeFaMultiline(v ?? ""))
     .pipe(
       z
         .string()
@@ -128,7 +153,7 @@ export const contactSchema = z.object({
   phone: anyPhoneSchema,
   email: optionalEmailSchema,
   subject: faText(3, 150, "موضوع"),
-  message: faText(15, 3000, "متن پیام"),
+  message: faProse(15, 3000, "متن پیام"),
 });
 
 export type ContactInput = z.infer<typeof contactSchema>;
@@ -190,7 +215,7 @@ export const articleFormSchema = z
     title: faText(8, 160, "عنوان مقاله"),
     slug: slugSchema,
     excerpt: faText(30, 400, "خلاصه مقاله"),
-    body: faText(200, 60000, "متن مقاله"),
+    body: faProse(200, 60000, "متن مقاله"),
     /**
      * Categories are CMS records now, so the value is validated for shape
      * here and checked against the live category list inside the action —
@@ -268,7 +293,7 @@ export type ArbitratorFormInput = z.infer<typeof arbitratorFormSchema>;
 
 export const faqFormSchema = z.object({
   question: faText(8, 200, "پرسش"),
-  answer: faText(30, 4000, "پاسخ"),
+  answer: faProse(30, 4000, "پاسخ"),
   /** Administrators may introduce their own groups, so this is free-form. */
   topic: z
     .string()
@@ -380,7 +405,7 @@ export const statusChangeSchema = z.object({
 
 export const noteSchema = z.object({
   id: z.string().min(1),
-  body: faText(2, 2000, "متن یادداشت"),
+  body: faProse(2, 2000, "متن یادداشت"),
 });
 
 export const rescheduleSchema = z.object({
